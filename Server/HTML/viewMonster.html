@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Monster</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #tooltip {
+            position: fixed;
+            z-index: 1000;
+            background: #050f05;
+            border: 1px solid var(--dim);
+            color: var(--text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            padding: 0.7rem 0.8rem;
+            max-width: 240px;
+            line-height: 2.2;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 0 12px rgba(0,255,65,0.1);
+        }
+
+        .monster-header {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid var(--dim);
+        }
+
+        .monster-header img {
+            width: 70px;
+            height: 70px;
+            border: 1px solid var(--green);
+            object-fit: cover;
+            image-rendering: pixelated;
+            flex-shrink: 0;
+        }
+
+        .monster-meta {
+            font-size: 0.55rem;
+            color: var(--dim);
+            line-height: 2.6;
+        }
+
+        .monster-meta .name {
+            font-size: 0.7rem;
+            color: var(--text);
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .exp-section { margin-bottom: 1.4rem; }
+
+        .exp-label {
+            font-size: 0.55rem;
+            color: var(--dim);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .exp-track {
+            width: 100%;
+            height: 8px;
+            background: #0d1a0d;
+            border: 1px solid var(--dim);
+            overflow: hidden;
+        }
+
+        .exp-fill {
+            height: 100%;
+            background: var(--green);
+            box-shadow: 0 0 6px rgba(0,255,65,0.6);
+            transition: width 0.4s ease;
+        }
+
+        .points-bar {
+            font-size: 0.6rem;
+            color: var(--text);
+            text-align: center;
+            padding: 0.8rem;
+            border: 1px solid var(--dim);
+            background: #050f05;
+            margin-bottom: 1.2rem;
+        }
+
+        .points-bar .pts {
+            color: var(--green);
+            text-shadow: 0 0 6px rgba(0,255,65,0.6);
+        }
+
+        .section-title {
+            font-size: 0.5rem;
+            color: #1a3a1a;
+            margin: 1.2rem 0 0.6rem;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--dim);
+            padding: 0.7rem 0.8rem;
+            margin-bottom: 0.5rem;
+            background: #0a0a0a;
+            cursor: help;
+            transition: background 0.1s, border-color 0.1s;
+        }
+
+        .stat-row:hover { background: #0d1a0d; border-color: var(--green); }
+
+        .stat-label {
+            font-size: 0.55rem;
+            color: var(--dim);
+            width: 3.6rem;
+        }
+
+        .stat-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .stat-value {
+            font-size: 0.75rem;
+            color: var(--green);
+            width: 2.8rem;
+            text-align: center;
+        }
+
+        .stat-delta {
+            font-size: 0.5rem;
+            color: transparent;
+            width: 2rem;
+            text-align: right;
+        }
+
+        .stat-delta.positive {
+            color: var(--green);
+            text-shadow: 0 0 4px rgba(0,255,65,0.5);
+        }
+
+        .stat-btn {
+            background: none;
+            border: 1px solid var(--dim);
+            color: var(--green);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.7rem;
+            width: 2rem;
+            height: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            transition: border-color 0.1s, background 0.1s;
+            min-height: unset;
+            border-radius: 0;
+            -webkit-appearance: none;
+        }
+
+        .stat-btn:hover:not(:disabled) { border-color: var(--green); background: #001a00; }
+        .stat-btn:active:not(:disabled) { transform: translate(1px,1px); }
+        .stat-btn:disabled { color: #1a3a1a; border-color: #0d1f0d; cursor: default; }
+
+        .stat-readonly {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.65rem 0.8rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #0d1f0d;
+            background: #080808;
+            cursor: help;
+            transition: border-color 0.1s;
+        }
+
+        .stat-readonly:hover { border-color: var(--dim); }
+        .stat-readonly .stat-label { color: #1a3a1a; }
+        .stat-readonly .stat-value { font-size: 0.7rem; color: #2a5a2a; }
+    </style>
+</head>
+<body>
+
+<div id="tooltip"></div>
+
+<div class="container">
+
+    <form action="team.html" style="margin-bottom:1.5rem;">
+        <input type="submit" value="back">
+    </form>
+
+    <h1 id="page-title">Monster</h1>
+
+    <div id="error-msg" class="msg-error" style="display:none;"></div>
+    <div id="ok-msg"    class="msg-ok"    style="display:none;"></div>
+
+    <div id="monster-view" style="display:none;">
+
+        <div class="monster-header">
+            <img id="monster-img" src="" alt="monster">
+            <div class="monster-meta">
+                <span class="name" id="monster-name"></span>
+                <span id="monster-type"></span>
+                <span id="monster-level"></span>
+            </div>
+        </div>
+
+        <div class="exp-section">
+            <div class="exp-label">
+                <span>EXP</span>
+                <span id="exp-text"></span>
+            </div>
+            <div class="exp-track">
+                <div class="exp-fill" id="exp-fill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <div class="points-bar">
+            skill points: <span class="pts" id="points-left">0</span>
+        </div>
+
+        <div class="section-title">&gt; STATS</div>
+        <div id="levelable-stats"></div>
+
+        <input type="submit" id="apply-btn" value="[ APPLY ]"
+               style="width:100%; margin-top:1rem;" disabled>
+
+        <div class="section-title">&gt; INFO</div>
+        <div id="readonly-stats"></div>
+
+    </div>
+</div>
+
+<script type="module">
+    // ── Tooltip ───────────────────────────────────────────────
+    const tooltip = document.getElementById('tooltip');
+    let activeTip = null;
+
+    function showTooltip(text, anchorEl) {
+        tooltip.textContent = text;
+        tooltip.style.display = 'block';
+        placeTooltip(anchorEl);
+        activeTip = anchorEl;
+    }
+
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+        activeTip = null;
+    }
+
+    function placeTooltip(el) {
+        const r   = el.getBoundingClientRect();
+        const gap = 10;
+        tooltip.style.top  = '0';
+        tooltip.style.left = '0';
+        const tw = tooltip.offsetWidth;
+        const th = tooltip.offsetHeight;
+
+        let top  = r.top - th - gap;
+        let left = r.left;
+
+        if (top < 4)                          top  = r.bottom + gap;
+        if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
+        if (left < 4)                          left = 4;
+
+        tooltip.style.top  = top  + 'px';
+        tooltip.style.left = left + 'px';
+    }
+
+    // Desktop hover
+    document.addEventListener('mouseover', e => {
+        const row = e.target.closest('[data-tip]');
+        row ? showTooltip(row.dataset.tip, row) : hideTooltip();
+    });
+
+    // Mobile tap
+    document.addEventListener('touchend', e => {
+        const row = e.target.closest('[data-tip]');
+        if (row) {
+            if (e.target.classList.contains('stat-btn')) { hideTooltip(); return; }
+            e.preventDefault();
+            if (activeTip === row) { hideTooltip(); return; }
+            showTooltip(row.dataset.tip, row);
+        } else {
+            hideTooltip();
+        }
+    }, { passive: false });
+
+    // ── State ─────────────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id') || '';
+
+    let levelable = [];   // stats with LevelUp > 0
+    let readonly  = [];   // stats with LevelUp === 0
+    let base      = {};
+    let current   = {};
+    let poolTotal = 0;
+
+    const errorBox = document.getElementById('error-msg');
+    const okBox    = document.getElementById('ok-msg');
+    const applyBtn = document.getElementById('apply-btn');
+
+    // ── Load ──────────────────────────────────────────────────
+    async function load() {
+        try {
+            const [infoRes, monsterRes] = await Promise.all([
+                fetch('/gameInfo?key=Stats', {method: 'POST'}),
+                fetch(`/getMonster?id=${encodeURIComponent(id)}`, { method: 'POST' })
+            ]);
+
+            if (!infoRes.ok)    { showErr('failed to load game info'); return; }
+            if (!monsterRes.ok) { showErr(await monsterRes.text()); return; }
+
+            const gameStats = await infoRes.json();
+            const arr       = await monsterRes.json();
+
+            if (!arr?.length || !arr[0]) { showErr('monster not found'); return; }
+            const m = arr[0];
+
+            // Build stat lists purely from gameInfo
+            levelable = [];
+            readonly  = [];
+            for (const [label, info] of Object.entries(gameStats)) {
+                const entry = {
+                    label,                      // PascalCase key from server, used for API calls
+                    key: label.toLowerCase(),   // matches monster JSON fields
+                    step: info.LevelUp,
+                    tip:  info.Description
+                };
+                if (info.LevelUp > 0) levelable.push(entry);
+                else                  readonly.push(entry);
+            }
+
+            poolTotal = m.skillpoints;
+            levelable.forEach(s => { base[s.key] = m[s.key]; current[s.key] = m[s.key]; });
+            readonly.forEach(s  => { base[s.key] = m[s.key]; });
+
+            document.getElementById('page-title').textContent    = m.name;
+            document.getElementById('monster-img').src           = `images/${m.type}.png`;
+            document.getElementById('monster-img').alt           = m.type;
+            document.getElementById('monster-name').textContent  = m.name;
+            document.getElementById('monster-type').textContent  = `TYPE: ${m.type}`;
+            document.getElementById('monster-level').textContent = `LVL:  ${m.level}`;
+
+            const needed = m.level * 2;
+            const pct    = needed > 0 ? Math.min(100, Math.round(m.exp / needed * 100)) : 0;
+            document.getElementById('exp-text').textContent = `${m.exp} / ${needed}`;
+            document.getElementById('exp-fill').style.width = pct + '%';
+
+            renderStats();
+            document.getElementById('monster-view').style.display = 'block';
+
+        } catch {
+            showErr('network error');
+        }
+    }
+
+    // ── Render ────────────────────────────────────────────────
+    function renderStats() {
+        const spent = levelable.reduce((acc, s) => acc + (current[s.key] - base[s.key]) / s.step, 0);
+        const left  = poolTotal - spent;
+
+        document.getElementById('points-left').textContent = left;
+        applyBtn.disabled = spent === 0;
+
+        // Levelable stats
+        const lDiv = document.getElementById('levelable-stats');
+        lDiv.innerHTML = '';
+        levelable.forEach(s => {
+            const delta = (current[s.key] - base[s.key]) / s.step;
+
+            const row = document.createElement('div');
+            row.className   = 'stat-row';
+            row.dataset.tip = s.tip;
+
+            const lbl = document.createElement('div');
+            lbl.className   = 'stat-label';
+            lbl.textContent = s.label;
+
+            const minus = document.createElement('button');
+            minus.className   = 'stat-btn';
+            minus.textContent = '-';
+            minus.disabled    = current[s.key] <= base[s.key];
+            minus.addEventListener('click', e => { e.stopPropagation(); current[s.key] -= s.step; renderStats(); });
+
+            const val = document.createElement('div');
+            val.className   = 'stat-value';
+            val.textContent = current[s.key];
+
+            const plus = document.createElement('button');
+            plus.className   = 'stat-btn';
+            plus.textContent = '+';
+            plus.disabled    = left <= 0;
+            plus.addEventListener('click', e => { e.stopPropagation(); current[s.key] += s.step; renderStats(); });
+
+            const controls = document.createElement('div');
+            controls.className = 'stat-controls';
+            controls.append(minus, val, plus);
+
+            const delt = document.createElement('div');
+            delt.className   = 'stat-delta' + (delta > 0 ? ' positive' : '');
+            delt.textContent = delta > 0 ? `+${delta}` : '+0';
+
+            row.append(lbl, controls, delt);
+            lDiv.appendChild(row);
+        });
+
+        // Readonly stats
+        const rDiv = document.getElementById('readonly-stats');
+        rDiv.innerHTML = '';
+        readonly.forEach(s => {
+            const row = document.createElement('div');
+            row.className   = 'stat-readonly';
+            row.dataset.tip = s.tip;
+
+            const lbl = document.createElement('div');
+            lbl.className   = 'stat-label';
+            lbl.textContent = s.label;
+
+            const val = document.createElement('div');
+            val.className   = 'stat-value';
+            val.textContent = s.key === 'skillpoints' ? left : base[s.key];
+
+            row.append(lbl, val);
+            rDiv.appendChild(row);
+        });
+    }
+
+    // ── Apply ─────────────────────────────────────────────────
+    applyBtn.addEventListener('click', async () => {
+        okBox.style.display    = 'none';
+        errorBox.style.display = 'none';
+        hideTooltip();
+
+        const deltas = {};
+        let totalSpent = 0;
+        levelable.forEach(s => {
+            const times = (current[s.key] - base[s.key]) / s.step;
+            if (times > 0) { deltas[s.label] = times; totalSpent += times; }
+        });
+        if (!totalSpent) return;
+
+        try {
+            const res = await fetch(`/levelMonster?id=${encodeURIComponent(id)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deltas),
+            });
+
+            if (res.ok) {
+                levelable.forEach(s => base[s.key] = current[s.key]);
+                poolTotal -= totalSpent;
+                base['skillpoints'] = poolTotal;
+                showOk('changes applied!');
+                renderStats();
+            } else {
+                showErr(await res.text());
+                levelable.forEach(s => current[s.key] = base[s.key]);
+                renderStats();
+            }
+        } catch {
+            showErr('network error');
+        }
+    });
+
+    function showErr(msg) { errorBox.textContent = '> ' + msg; errorBox.style.display = 'block'; }
+    function showOk(msg)  { okBox.textContent    = '> ' + msg; okBox.style.display    = 'block'; }
+
+    load();
+</script>
+</body>
+</html>

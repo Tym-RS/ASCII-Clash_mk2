@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1 id="greeting">...</h1>
+    <p id="score">score: ...</p>
+
+    <form action="leaderboard.html">
+        <input type="submit" value="leaderboard">
+    </form>
+
+    <form action="team.html">
+        <input type="submit" value="singleplayer">
+    </form>
+
+    <form action="feedback.html">
+        <input type="submit" value="feedback">
+    </form>
+
+    <form id="logoutForm">
+        <input type="submit" value="logout">
+    </form>
+
+    <a href="about.html">info</a>
+</div>
+
+<script type="module">
+    const username = sessionStorage.getItem('username') || 'stranger';
+    const score = sessionStorage.getItem('score') || '0';
+
+    document.getElementById('greeting').textContent = 'hello, ' + username + '!';
+    document.getElementById('score').textContent = 'score: ' + score;
+
+    document.getElementById('logoutForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await fetch('/logout', { method: 'POST' });
+        window.location.href = '/';
+    });
+</script>
+</body>
+</html>

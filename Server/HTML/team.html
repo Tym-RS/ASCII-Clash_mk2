@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Your Team</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #tooltip {
+            position: fixed;
+            z-index: 1000;
+            background: #050f05;
+            border: 1px solid var(--dim);
+            color: var(--text);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            padding: 0.7rem 0.8rem;
+            max-width: 240px;
+            line-height: 2.2;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 0 12px rgba(0,255,65,0.1);
+        }
+
+        .monster-banner {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--dim);
+            padding: 0.9rem;
+            margin-bottom: 0.7rem;
+            background: #0a0a0a;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s;
+            gap: 0.9rem;
+        }
+
+        .monster-banner:hover { background: #0d1a0d; border-color: var(--green); }
+
+        .monster-banner img {
+            width: 62px;
+            height: 62px;
+            object-fit: cover;
+            border: 1px solid var(--green);
+            flex-shrink: 0;
+            image-rendering: pixelated;
+        }
+
+        .monster-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .monster-name-line {
+            font-size: 0.58rem;
+            color: var(--green);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .monster-meta-line {
+            font-size: 0.46rem;
+            color: var(--dim);
+        }
+
+        .monster-stats-line {
+            font-size: 0.46rem;
+            color: var(--text);
+            display: flex;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+        }
+
+        .empty-banner {
+            font-size: 0.52rem;
+            color: #1a3a1a;
+            line-height: 2;
+        }
+
+        .new-run-row { margin-top: 1.4rem; }
+    </style>
+</head>
+<body>
+
+<div id="tooltip"></div>
+
+<div class="container">
+
+    <form action="home.html" style="margin-bottom:1.5rem;">
+        <input type="submit" value="back">
+    </form>
+
+    <h1>Your Team</h1>
+
+    <div id="team-list"></div>
+
+    <div id="msg" class="msg-error" style="display:none;"></div>
+
+    <div class="new-run-row">
+        <form id="newRunForm">
+            <input type="submit" value="New Run">
+        </form>
+    </div>
+
+</div>
+
+<script type="module">
+    // ── Tooltip ───────────────────────────────────────────────
+    const tooltip = document.getElementById('tooltip');
+    let activeTip = null;
+
+    function showTooltip(text, anchorEl) {
+        tooltip.textContent = text;
+        tooltip.style.display = 'block';
+        placeTooltip(anchorEl);
+        activeTip = anchorEl;
+    }
+
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+        activeTip = null;
+    }
+
+    function placeTooltip(el) {
+        const r   = el.getBoundingClientRect();
+        const gap = 10;
+        tooltip.style.top  = '0';
+        tooltip.style.left = '0';
+        const tw = tooltip.offsetWidth;
+        const th = tooltip.offsetHeight;
+
+        let top  = r.top - th - gap;
+        let left = r.left;
+
+        if (top < 4)                           top  = r.bottom + gap;
+        if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
+        if (left < 4)                          left = 4;
+
+        tooltip.style.top  = top  + 'px';
+        tooltip.style.left = left + 'px';
+    }
+
+    // Desktop hover
+    document.addEventListener('mouseover', e => {
+        const banner = e.target.closest('[data-tip]');
+        banner ? showTooltip(banner.dataset.tip, banner) : hideTooltip();
+    });
+
+    // Mobile tap — tap banner opens tooltip, second tap navigates
+    document.addEventListener('touchend', e => {
+        const banner = e.target.closest('[data-tip]');
+        if (banner) {
+            if (activeTip === banner) {
+                // second tap — let the click handler fire (navigate)
+                hideTooltip();
+                return;
+            }
+            e.preventDefault();
+            showTooltip(banner.dataset.tip, banner);
+        } else {
+            hideTooltip();
+        }
+    }, { passive: false });
+
+    // ── Build banner ──────────────────────────────────────────
+    function buildBanner(monster, monsterDescs) {
+        const div = document.createElement('div');
+        div.className = 'monster-banner';
+
+        if (monster) {
+            // Set tooltip to the monster type description from gameInfo
+            div.dataset.tip = monsterDescs[monster.type] ?? monster.type;
+            div.addEventListener('click', () => window.location.href = `./viewMonster.html?id=${monster.id}`);
+
+            const img = document.createElement('img');
+            img.src = `images/${monster.type}.png`;
+            img.alt = monster.type;
+            div.appendChild(img);
+
+            const info = document.createElement('div');
+            info.className = 'monster-info';
+
+            const nameLine = document.createElement('div');
+            nameLine.className   = 'monster-name-line';
+            nameLine.textContent = `${monster.name}, the ${monster.type}`;
+            info.appendChild(nameLine);
+
+            const metaLine = document.createElement('div');
+            metaLine.className   = 'monster-meta-line';
+            const pts = monster.skillpoints > 0 ? `  (+${monster.skillpoints} pts!)` : '';
+            metaLine.textContent = `LVL:${monster.level}  EXP:${monster.exp}/${monster.level * 2}${pts}`;
+            info.appendChild(metaLine);
+
+            // Stat line — keys come from the monster object, no hardcoding
+            // We skip: id, name, type, level, exp, skillpoints (meta fields)
+            const SKIP = new Set(['id', 'name', 'type', 'level', 'exp', 'skillpoints']);
+            const statsLine = document.createElement('div');
+            statsLine.className = 'monster-stats-line';
+            for (const [k, v] of Object.entries(monster)) {
+                if (SKIP.has(k)) continue;
+                const span = document.createElement('span');
+                span.textContent = `${k}:${v}`;
+                statsLine.appendChild(span);
+            }
+            info.appendChild(statsLine);
+
+            div.appendChild(info);
+        } else {
+            const img = document.createElement('img');
+            img.src = 'images/NA.png';
+            img.alt = 'empty';
+            div.appendChild(img);
+
+            const empty = document.createElement('div');
+            empty.className   = 'empty-banner';
+            empty.textContent = 'Empty slot — create a monster!';
+            div.appendChild(empty);
+
+            div.addEventListener('click', () => window.location.href = 'createMonster.html');
+        }
+
+        return div;
+    }
+
+    // ── Load ──────────────────────────────────────────────────
+    async function load() {
+        const msgBox   = document.getElementById('msg');
+        const teamList = document.getElementById('team-list');
+
+        try {
+            const [infoRes, teamRes] = await Promise.all([
+                fetch('/gameInfo?key=Monsters', { method: 'POST'}),
+                fetch('/getMonster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+            ]);
+
+            const monsterDescs = infoRes.ok ? await infoRes.json() : {};
+            if (!teamRes.ok) { msgBox.textContent = '> failed to load team'; msgBox.style.display = 'block'; return; }
+
+            const data = await teamRes.json();
+
+            teamList.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                teamList.appendChild(buildBanner(data[i] ?? null, monsterDescs));
+            }
+        } catch {
+            msgBox.textContent = '> Network error';
+            msgBox.style.display = 'block';
+        }
+    }
+
+    // ── New Run ───────────────────────────────────────────────
+    document.getElementById('newRunForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const msgBox = document.getElementById('msg');
+        msgBox.style.display = 'none';
+
+        try {
+            const res  = await fetch('/newSGRun', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) { msgBox.textContent = '> ' + (data.error || 'Unknown error'); msgBox.style.display = 'block'; }
+            else         { window.location.href = data.redirect || '/'; }
+        } catch {
+            msgBox.textContent = '> Network error';
+            msgBox.style.display = 'block';
+        }
+    });
+
+    load();
+</script>
+</body>
+</html>

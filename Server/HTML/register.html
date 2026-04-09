@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Register</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>New Player</h1>
+
+    <div id="error-msg" class="msg-error" style="display:none;"></div>
+
+    <form id="register-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="enter name" autocomplete="off">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="">
+
+        <label for="confirm">Confirm Password</label>
+        <input type="password" id="confirm" name="confirm" placeholder="">
+
+        <input type="submit" value="[ CREATE ]">
+    </form>
+
+    <a href="/">&gt; already have an account? login</a>
+
+    <div class="info-box">
+        <p class="info-title">&gt; data notice</p>
+        <p>This is a small "test" project, it is NOT secure, so do NOT provide ANY sensitive data.</p>
+    </div>
+</div>
+
+<script type="module">
+    import {shake, showError, hideMsg, postForm} from '/utils.js';
+
+    const form = document.getElementById('register-form');
+    const errorBox = document.getElementById('error-msg');
+    const container = document.querySelector('.container');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMsg(errorBox);
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm').value;
+
+        if (password !== confirm) {
+            showError(errorBox, 'passwords do not match');
+            shake(container);
+            return;
+        }
+
+        const res = await postForm('/register', {username, password});
+
+        if (res.ok) {
+            sessionStorage.setItem('username', username);
+            window.location.href = '/home.html';
+        } else {
+            const msg = await res.text();
+            showError(errorBox, msg);
+            shake(container);
+        }
+    });
+</script>
+</body>
+</html>
