@@ -2,7 +2,7 @@
 #define ASCII_CLASH_STATS_H
 #include "Config.h"
 #include <unordered_map>
-
+#include <string>
 
 enum class Stat {
 #define X(stat, ...) stat,
@@ -33,7 +33,7 @@ constexpr inline StatInfo StatInfos[] = {
 };
 
 
-const inline std::unordered_map<std::string, Stat> StringStatMap = {
+const inline std::unordered_map<std::string, Stat> StatStringMap = {
 #define X(stat, ...) {#stat, Stat::stat},
     MONSTER_STATS
 #undef X

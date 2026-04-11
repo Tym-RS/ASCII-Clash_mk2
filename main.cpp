@@ -7,9 +7,7 @@ int main(const int argc, const char *argv[]) {
     const DBManager dbm(argc > 1 ? argv[1] : "Default");
     GameServer server = GameServer(dbm);
 
-    std::thread serverThread([&server]() {
-        server.Run();
-    });
+    std::thread serverThread([&server] { server.Run(); });
 
     std::string cmd;
     while (std::cin >> cmd) {

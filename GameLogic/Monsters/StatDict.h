@@ -8,6 +8,9 @@ class StatDict {
 public:
     StatDict() = default;
 
+    explicit StatDict(const std::array<int, static_cast<int>(Stat::COUNT)> &initValues) : values(initValues) {
+    }
+
     void ReceiveEXP(const int amount) {
         values[static_cast<int>(Stat::Exp)] += amount;
         if (Get(Stat::Exp) < Get(Stat::Level) * 2) return;

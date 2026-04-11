@@ -19,6 +19,8 @@ public:
 
     explicit Monster(std::string name, int ID, MonsterType type);
 
+    explicit Monster(std::string name, int ID, MonsterType type, const StatDict &stats);
+
     [[nodiscard]] bool IsAlive() const;
 
     void virtual OnTurnStart() {

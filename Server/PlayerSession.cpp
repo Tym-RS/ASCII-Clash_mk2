@@ -1,10 +1,9 @@
 #include "PlayerSession.h"
 #include <ctime>
-#include <utility>
 #include "Server/ServerHelpers.h"
 using json = nlohmann::json;
 
-PlayerSession::PlayerSession(const int playerID) : PlayerID(playerID), ID(RandomID()) {
+PlayerSession::PlayerSession(const int playerID) : PlayerID(playerID), SessionID(RandomID()) {
     lastActivity = time(nullptr);
     // TODO
     Monsters[0] = new Human("George", 1);
@@ -22,7 +21,7 @@ void PlayerSession::UpdateLastActivity() {
     lastActivity = time(nullptr);
 }
 
-json PlayerSession::GetMonsterJson(const int monsterID = -1) const {
+json PlayerSession::GetMonsterJson(const int monsterID) const {
     json arr = json::array();
     for (Monster *monster: Monsters) {
         if (monsterID != -1 && (!monster || monster->ID != monsterID)) continue;
@@ -30,7 +29,7 @@ json PlayerSession::GetMonsterJson(const int monsterID = -1) const {
             arr.push_back({
                 {"id", monster->ID},
                 {"name", monster->Name},
-                {"type", MonStrings.at(monster->Type).TypeName},
+                {"type", MonsterDescriptions.at(monster->Type).TypeAsString},
                 {"level", monster->GetStatDict().Get(Stat::Level)},
                 {"exp", monster->GetStatDict().Get(Stat::Exp)},
                 {"skillpoints", monster->GetStatDict().Get(Stat::SkillPoints)},
@@ -59,14 +58,14 @@ bool PlayerSession::TryLevelMonster(const int id, nlohmann::json data, std::stri
         return false;
     }
 
-    for (const auto &[key, value]: data.items()) {
-        auto it = StringStatMap.find(key);
-        if (it == StringStatMap.end()) {
-            if (err) *err = "Stat [" + key + "] not found. SP's only partially applied.";
+    for (const auto &[stat, lvlAmount]: data.items()) {
+        auto it = StatStringMap.find(stat);
+        if (it == StatStringMap.end()) {
+            if (err) *err = "Stat [" + stat + "] not found. SP's only partially applied.";
             return false;
         }
-        for (int i = 0; i < value.get<int>(); i++)
-            if (!mon->GetStatDict().TryLevel(it->second, err)) return false;
+        for (int i = 0; i < lvlAmount.get<int>(); i++)
+            if (!mon->GetStatDict().TryLevel(StatStringMap.at(stat), err)) return false;
     }
 
     return true;

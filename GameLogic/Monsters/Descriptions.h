@@ -15,15 +15,21 @@ enum class MonsterType {
 
 
 struct MonDescription {
-    MonDescription(std::string typeName, std::string description) : TypeName(std::move(typeName)),
+    MonDescription(std::string typeName, std::string description) : TypeAsString(std::move(typeName)),
                                                                     Description(std::move(description)) {
     }
 
-    const std::string TypeName, Description;
+    const std::string TypeAsString, Description;
 };
 
-const inline std::unordered_map<MonsterType, MonDescription> MonStrings = {
+const inline std::unordered_map<MonsterType, MonDescription> MonsterDescriptions = {
 #define X(type, desc) { MonsterType::type, MonDescription(#type, desc) },
+    MONSTER_TYPES
+#undef X
+};
+
+const inline std::unordered_map<std::string, MonsterType> MonsterTypeStringMap = {
+#define X(type, ...) { #type, MonsterType::type },
     MONSTER_TYPES
 #undef X
 };

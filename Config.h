@@ -35,7 +35,7 @@ namespace Config {
     }
 
     namespace Server {
-        inline constexpr long SessionTimeout = 60;
+        inline constexpr long SessionTimeout = 9999999;
     }
 }
 

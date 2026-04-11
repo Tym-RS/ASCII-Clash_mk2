@@ -14,12 +14,14 @@ public:
 
     void UpdateLastActivity();
 
-    [[nodiscard]] nlohmann::json GetMonsterJson(int monsterID) const;
+    [[nodiscard]] nlohmann::json GetMonsterJson(int monsterID = -1) const;
 
     bool TryLevelMonster(int id, nlohmann::json data, std::string *err) const;
 
+    int Score = 0;
+
     const int PlayerID;
-    const std::string ID;
+    const std::string SessionID;
     Monster *Monsters[Config::Players::TeamSize];
 
     ~PlayerSession();

@@ -14,13 +14,9 @@ public:
 
     bool TryRegisterPlayer(const std::string *username, const std::string *password, std::string *err) const;
 
-    PlayerSession *TryGetPlayer(const std::string *username, const std::string *password) const;
+    PlayerSession *GetNewPlayerSession(const std::string *username, const std::string *password) const;
 
-    void SavePlayer() const;
-
-    void SaveMonster() const;
-
-    Monster GetMonsterByID(int id) const;
+    void SavePlayer(const PlayerSession *toSave) const;
 
     void GetScoreboard() const;
 
@@ -28,6 +24,11 @@ public:
 
 private:
     void InitDB() const;
+
+    void FillPlayerMonsters(PlayerSession *player) const;
+
+    void SaveMonster(Monster *toSave, const PlayerSession *owner) const;
+
 
     sqlite3 *db{};
 };
