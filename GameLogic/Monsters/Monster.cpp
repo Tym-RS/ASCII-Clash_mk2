@@ -3,9 +3,10 @@
 #include "Monsters.h"
 #include "MathHelpers.h"
 
-Monster::Monster(std::string name, std::string id, const MonsterType type) : Name(std::move(name)), ID(std::move(id)),
-                                                                             Type(type),
-                                                                             currentHealth(GetStatDict().Get(Stat::Health)) {
+Monster::Monster(std::string name, const int id, const MonsterType type) : Name(std::move(name)), ID(id),
+                                                                           Type(type),
+                                                                           currentHealth(
+                                                                               GetStatDict().Get(Stat::Health)) {
 }
 
 bool Monster::IsAlive() const {

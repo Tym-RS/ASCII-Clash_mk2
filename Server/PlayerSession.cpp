@@ -1,37 +1,31 @@
 #include "PlayerSession.h"
-
+#include <ctime>
 #include <utility>
-
+#include "Server/ServerHelpers.h"
 using json = nlohmann::json;
 
-inline double Now() {
-    return std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
-}
-
-
-PlayerSession::PlayerSession(const int playerID, std::string sessionID) : PlayerID(playerID),
-                                                                          SessionID(std::move(sessionID)) {
-    lastActivity = Now();
-    Monsters[0] = new Human("George", "AFDSGFKHSF");
-    Monsters[1] = new Human("Peter", "ADFFGSFG44");
-    Monsters[2] = new Orc("Murkk", "SGSFSHDFEF");
-    Monsters[3] = new Orc("Gurk", "safasfe");
+PlayerSession::PlayerSession(const int playerID) : PlayerID(playerID), ID(RandomID()) {
+    lastActivity = time(nullptr);
+    // TODO
+    Monsters[0] = new Human("George", 1);
+    Monsters[1] = new Human("Peter", 2);
+    Monsters[2] = new Orc("Murkk", 3);
+    Monsters[3] = new Orc("Gurk", 4);
     Monsters[4] = nullptr;
 }
 
 bool PlayerSession::IsActive() const {
-    return lastActivity + Config::Server::SessionTimeout > Now();
+    return lastActivity + Config::Server::SessionTimeout > time(nullptr);
 }
 
 void PlayerSession::UpdateLastActivity() {
-    lastActivity = Now();
+    lastActivity = time(nullptr);
 }
 
-json PlayerSession::GetMonsterJson(const std::string &ID) const {
+json PlayerSession::GetMonsterJson(const int monsterID = -1) const {
     json arr = json::array();
-    const bool selectAll = ID.empty();
     for (Monster *monster: Monsters) {
-        if (!selectAll && (!monster || monster->ID != ID)) continue;
+        if (monsterID != -1 && (!monster || monster->ID != monsterID)) continue;
         if (monster)
             arr.push_back({
                 {"id", monster->ID},
@@ -51,12 +45,7 @@ json PlayerSession::GetMonsterJson(const std::string &ID) const {
     return arr;
 }
 
-Monster *PlayerSession::GetMonsterByID(const std::string &id) const {
-    for (Monster *m: Monsters) if (m && m->ID == id) return m;
-    return nullptr;
-}
-
-bool PlayerSession::TryLevelMonster(const std::string &id, nlohmann::json data, std::string *err = nullptr) const {
+bool PlayerSession::TryLevelMonster(const int id, nlohmann::json data, std::string *err = nullptr) const {
     Monster *mon = GetMonsterByID(id);
     if (!mon) {
         if (err) *err = "Monster not found.";
@@ -85,4 +74,9 @@ bool PlayerSession::TryLevelMonster(const std::string &id, nlohmann::json data, 
 
 PlayerSession::~PlayerSession() {
     //TODO Delete monster when out of scope. ?????????
+}
+
+Monster *PlayerSession::GetMonsterByID(const int id) const {
+    for (Monster *m: Monsters) if (m && m->ID == id) return m;
+    return nullptr;
 }

@@ -8,26 +8,26 @@
 
 class PlayerSession {
 public:
-    explicit PlayerSession(int playerID, std::string sessionID);
+    explicit PlayerSession(int playerID);
 
     [[nodiscard]] bool IsActive() const;
 
     void UpdateLastActivity();
 
-    [[nodiscard]] nlohmann::json GetMonsterJson(const std::string &ID = "") const;
+    [[nodiscard]] nlohmann::json GetMonsterJson(int monsterID) const;
 
-    bool TryLevelMonster(const std::string &id, nlohmann::json data, std::string *err) const;
+    bool TryLevelMonster(int id, nlohmann::json data, std::string *err) const;
 
     const int PlayerID;
-    const std::string SessionID;
+    const std::string ID;
     Monster *Monsters[Config::Players::TeamSize];
 
     ~PlayerSession();
 
 private:
-    Monster *GetMonsterByID(const std::string &id) const;
+    [[nodiscard]] Monster *GetMonsterByID(int id) const;
 
-    double lastActivity;
+    long lastActivity;
 };
 
 #endif

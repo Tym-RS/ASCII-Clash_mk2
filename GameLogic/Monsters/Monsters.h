@@ -10,14 +10,14 @@
 class Monster {
 public:
     const std::string Name;
-    const std::string ID;
+    const int ID;
     const MonsterType Type;
 
     [[nodiscard]] StatDict &GetStatDict() { return stats; }
 
     Logger *LogPtr = nullptr;
 
-    explicit Monster(std::string name, std::string ID, MonsterType type);
+    explicit Monster(std::string name, int ID, MonsterType type);
 
     [[nodiscard]] bool IsAlive() const;
 
@@ -49,7 +49,7 @@ private:
 
 class Human final : public Monster {
 public:
-    explicit Human(const std::string &name, const std::string &id) : Monster(name, id, MonsterType::Human) {
+    explicit Human(const std::string &name, const int id) : Monster(name, id, MonsterType::Human) {
     }
 
     bool ReceiveAttack(Monster *from) override;
@@ -57,7 +57,7 @@ public:
 
 class Orc final : public Monster {
 public:
-    explicit Orc(const std::string &name, const std::string &id) : Monster(name, id, MonsterType::Orc) {
+    explicit Orc(const std::string &name, const int id) : Monster(name, id, MonsterType::Orc) {
     }
 
     void Attack(Monster *target) override;
@@ -65,7 +65,7 @@ public:
 
 class Methog final : public Monster {
 public:
-    explicit Methog(const std::string &name, const std::string &id) : Monster(name, id, MonsterType::Methog) {
+    explicit Methog(const std::string &name, const int id) : Monster(name, id, MonsterType::Methog) {
     }
 
     bool ReceiveAttack(Monster *from) override;

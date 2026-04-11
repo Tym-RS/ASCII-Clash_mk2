@@ -20,8 +20,6 @@ X(Methog, "Hedgehog, but with Metal.") \
 X(Ratmen, "A stealth-sneak rat.")
 
 
-
-
 namespace Config {
     namespace Monsters {
         // The base chance to hit. Defense will subtract from this, attack will add.
@@ -37,7 +35,7 @@ namespace Config {
     }
 
     namespace Server {
-        inline constexpr float SessionTimeout = 60;
+        inline constexpr long SessionTimeout = 60;
     }
 }
 

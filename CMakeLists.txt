@@ -24,7 +24,7 @@ add_executable(ASCII_Clash main.cpp
         GameLogic/Monsters/MonsterClasses/Methog.cpp
         Server/PlayerSession.cpp
         GameLogic/Monsters/Descriptions.h
-        Server/ServerHelpers.cpp
+        Server/ServerHelpers.h
         GameLogic/Monsters/StatDict.h
 )
 target_link_libraries(ASCII_Clash SQLite::SQLite3)

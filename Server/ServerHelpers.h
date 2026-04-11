@@ -1,7 +1,9 @@
-#include "GameServer.h"
+#ifndef SERVERHELPERS_H
+#define SERVERHELPERS_H
+#include "Imports/httplib.h"
 
 
-std::optional<std::string> GameServer::GetCookie(const std::string &key, const httplib::Request &req) {
+inline std::optional<std::string> GetCookie(const std::string &key, const httplib::Request &req) {
     const auto it = req.headers.find("Cookie");
     if (it == req.headers.end()) return std::nullopt;
     std::istringstream ss(it->second);
@@ -17,10 +19,11 @@ std::optional<std::string> GameServer::GetCookie(const std::string &key, const h
     return std::nullopt;
 }
 
-std::string GameServer::RandomID() {
+inline std::string RandomID() {
     std::random_device rd;
     std::uniform_int_distribution<uint64_t> dist;
     std::stringstream stream;
     for (int i = 0; i < 4; ++i) stream << std::hex << dist(rd);
     return stream.str();
 }
+#endif // SERVERHELPERS_H

@@ -1,10 +1,12 @@
 #include "GameServer.h"
 #include <nlohmann/json.hpp>
+#include "ServerHelpers.h"
 #include "GameLogic/Monsters/Descriptions.h"
+
 using namespace httplib;
 using json = nlohmann::json;
 
-GameServer::GameServer(DBManager &db) : db(db), server(Server()) {
+GameServer::GameServer(const DBManager &db) : db(db), server(Server()) {
     server.set_mount_point("/", ServerMountPath);
 
     server.Get(R"(/(.*))", [](const Request &req, Response &res) {
@@ -24,7 +26,7 @@ GameServer::GameServer(DBManager &db) : db(db), server(Server()) {
         }
     });
 
-    server.Post("/gameInfo", [this](const Request &req, Response &res) {
+    server.Post("/gameInfo", [](const Request &req, Response &res) {
         const json data = GetGameDescriptionsJSON();
         std::string key;
         if (req.has_param("key")) key = req.get_param_value("key");
@@ -51,24 +53,36 @@ GameServer::GameServer(DBManager &db) : db(db), server(Server()) {
 
     server.Post("/getMonster", [this](const Request &req, Response &res) {
         const auto player = GetSession(req, res);
-        if (!player.has_value()) return;
-
-        std::string id;
-        if (req.has_param("id")) id = req.get_param_value("id");
-        res.set_content(player->GetMonsterJson(id).dump(), "application/json");
-        res.status = 200;
+        if (!player) return;
+        if (!req.has_param("id")) {
+            res.set_content(player->GetMonsterJson().dump(), "application/json");
+            return;
+        }
+        try {
+            const int id = std::stoi(req.get_param_value("id"));
+            res.set_content(player->GetMonsterJson(id).dump(), "application/json");
+        } catch (const std::exception &e) {
+            res.set_content("Monster ID's MUST be integers.", "text/plain");
+            res.status = 401;
+        }
     });
 
     server.Post("/levelMonster", [this](const Request &req, Response &res) {
         const auto player = GetSession(req, res);
-        if (!player.has_value()) return;
+        if (!player) return;
 
         if (!req.has_param("id")) {
             res.status = 401;
             res.set_content("No ID provided.", "text/plain");
             return;
         }
-        const std::string id = req.get_param_value("id");
+        int id = 0;
+        try {
+            id = std::stoi(req.get_param_value("id"));
+        } catch (const std::exception &e) {
+            res.set_content(e.what(), "text/plain");
+            res.status = 401;
+        }
 
         json data;
         try { data = json::parse(req.body); } catch (const std::exception &e) {
@@ -85,11 +99,14 @@ GameServer::GameServer(DBManager &db) : db(db), server(Server()) {
     });
 
     server.Post("/logout", [this](const Request &req, Response &res) {
-        auto session = GetSession(req, res);
-        if (!session.has_value()) {
-            // TODO
-        }
+        const auto session = GetSession(req, res);
+        if (!session) return;
+        sessions.erase(session->ID);
+        delete session;
+        res.set_header("Set-Cookie", "session=; Max-Age=0; HttpOnly; Path=/; SameSite=Strict");
+        res.set_redirect("/");
     });
+
     server.Post("/newSGRun", [this](const Request &req, Response &res) {
         // TODO
     });
@@ -101,26 +118,31 @@ void GameServer::Run() {
 
 
 void GameServer::StartSession(const std::string *usr, const std::string *pwd, Response &res) {
-    const int playerID = db.GetPlayerID(usr, pwd);
-    if (playerID == -1) {
+    PlayerSession *playerID = db.TryGetPlayer(usr, pwd);
+    if (playerID == nullptr) {
         res.status = 401;
         res.set_content("login failed <", "text/plain");
         return;
     }
-    const std::string sessionID = RandomID();
-    sessions.emplace(sessionID, PlayerSession(playerID, sessionID));
-    res.set_header("Set-Cookie", "session=" + sessionID + "; HttpOnly; Path=/; SameSite=Strict");
+    sessions.emplace(playerID->ID, playerID);
+    res.set_header("Set-Cookie", "session=" + playerID->ID + "; HttpOnly; Path=/; SameSite=Strict");
     res.status = 200;
 }
 
-std::optional<PlayerSession> GameServer::GetSession(const Request &req, Response &res) const {
+PlayerSession *GameServer::GetSession(const Request &req, Response &res) const {
     const auto sessionID = GetCookie("session", req);
-    if (!sessionID.has_value() || !sessions.contains(sessionID.value())) {
-        res.status = 401;
-        res.set_content("Session expired.", "text/plain");
-        return std::nullopt;
+    PlayerSession *session = nullptr;
+
+    if (sessionID.has_value() && sessions.contains(sessionID.value()))
+        session = sessions.at(sessionID.value());
+
+    if (session && session->IsActive()) {
+        session->UpdateLastActivity();
+        return session;
     }
-    PlayerSession session = sessions.at(sessionID.value());
-    session.UpdateLastActivity();
-    return session;
+
+    res.status = 401;
+    res.set_content("Session expired.", "text/plain");
+    res.set_redirect("/");
+    return nullptr;
 }

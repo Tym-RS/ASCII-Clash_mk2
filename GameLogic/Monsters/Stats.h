@@ -13,14 +13,14 @@ enum class Stat {
 
 struct StatInfo {
     constexpr StatInfo(const char *statString, const char *description,
-                       const int defaultValue, const int levelUpAmount) : ToString(statString),
+                       const int defaultValue, const int levelUpAmount) : AsString(statString),
                                                                           Description(description),
                                                                           Levelable(levelUpAmount > 0),
                                                                           LevelUpAmount(levelUpAmount),
                                                                           DefaultValue(defaultValue) {
     }
 
-    const char *ToString, *Description;
+    const char *AsString, *Description;
     const bool Levelable;
     const int LevelUpAmount, DefaultValue;
 };
