@@ -6,14 +6,13 @@
 #include "../Fighting/Logger.h"
 #include "Descriptions.h"
 
-
 class Monster {
 public:
     const std::string Name;
     const int ID;
     const MonsterType Type;
 
-    [[nodiscard]] StatDict &GetStatDict() { return stats; }
+    [[nodiscard]] StatDict *GetStatDict() { return &stats; }
 
     Logger *LogPtr = nullptr;
 
@@ -47,6 +46,14 @@ private:
 
 
 // ---------------------------------------------------------------
+#include "Config.h"
+
+inline Monster *CreateTypedMonster(const std::string &name, const int id, MonsterType type) {
+    return new Monster(name, id, type);
+#define X(type)
+
+#undef X
+}
 
 
 class Human final : public Monster {

@@ -6,85 +6,132 @@
     <title>ASCII Clash — Your Team</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        #tooltip {
-            position: fixed;
-            z-index: 1000;
-            background: #050f05;
-            border: 1px solid var(--dim);
-            color: var(--text);
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.5rem;
-            padding: 0.7rem 0.8rem;
-            max-width: 240px;
-            line-height: 2.2;
-            pointer-events: none;
-            display: none;
-            box-shadow: 0 0 12px rgba(0,255,65,0.1);
-        }
-
         .monster-banner {
             display: flex;
-            align-items: center;
+            align-items: stretch;
             border: 1px solid var(--dim);
-            padding: 0.9rem;
-            margin-bottom: 0.7rem;
+            margin-bottom: 0.8rem;
             background: #0a0a0a;
             cursor: pointer;
             transition: background 0.1s, border-color 0.1s;
-            gap: 0.9rem;
         }
 
-        .monster-banner:hover { background: #0d1a0d; border-color: var(--green); }
 
-        .monster-banner img {
-            width: 62px;
-            height: 62px;
-            object-fit: cover;
-            border: 1px solid var(--green);
+
+        .banner-img {
+            width: 76px;
+            min-height: 76px;
             flex-shrink: 0;
+            object-fit: cover;
+            border-right: 1px solid var(--dim);
             image-rendering: pixelated;
+            display: block;
         }
 
-        .monster-info {
+
+
+        .banner-body {
+            flex: 1;
+            padding: 0.8rem 0.9rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.55rem;
             min-width: 0;
         }
 
-        .monster-name-line {
-            font-size: 0.58rem;
+        .banner-name {
+            font-size: 0.65rem;
             color: var(--green);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .monster-meta-line {
-            font-size: 0.46rem;
+        .banner-meta {
+            font-size: 0.5rem;
             color: var(--dim);
-        }
-
-        .monster-stats-line {
-            font-size: 0.46rem;
-            color: var(--text);
             display: flex;
-            gap: 0.7rem;
+            gap: 1rem;
             flex-wrap: wrap;
         }
 
+        .banner-pts {
+            color: var(--green);
+            opacity: 0.8;
+        }
+
+        .banner-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.3rem 1rem;
+        }
+
+        .banner-stat {
+            font-size: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #0d1f0d;
+            padding-bottom: 0.2rem;
+        }
+
+        .banner-stat-key { color: var(--dim); }
+        .banner-stat-val { color: var(--green); }
+
         .empty-banner {
-            font-size: 0.52rem;
+            display: flex;
+            align-items: center;
+            border: 1px dashed #0d2a0d;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            background: #080808;
+            cursor: pointer;
+            gap: 0.9rem;
+            transition: border-color 0.15s, background 0.1s;
+        }
+
+        .empty-banner:hover {
+            border-color: var(--dim);
+            background: #0a0f0a;
+        }
+
+        .empty-banner img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            flex-shrink: 0;
+            opacity: 0.3;
+            image-rendering: pixelated;
+        }
+
+        .empty-text {
+            font-size: 0.5rem;
             color: #1a3a1a;
-            line-height: 2;
+            line-height: 2.2;
         }
 
         .new-run-row { margin-top: 1.4rem; }
+
+        .new-run-row input[type="submit"]:disabled {
+            background: #1a2a1a;
+            color: #2a4a2a;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .new-run-hint {
+            font-size: 0.45rem;
+            color: #1a3a1a;
+            text-align: center;
+            margin-top: 0.8rem;
+            line-height: 2.2;
+            display: none;
+        }
+
+        .new-run-hint.visible { display: block; }
     </style>
 </head>
 <body>
-
-<div id="tooltip"></div>
 
 <div class="container">
 
@@ -100,127 +147,96 @@
 
     <div class="new-run-row">
         <form id="newRunForm">
-            <input type="submit" value="New Run">
+            <input type="submit" id="new-run-btn" value="New Run" disabled>
         </form>
+        <div class="new-run-hint" id="new-run-hint">fill all slots to start a run</div>
     </div>
 
 </div>
 
 <script type="module">
-    // ── Tooltip ───────────────────────────────────────────────
-    const tooltip = document.getElementById('tooltip');
-    let activeTip = null;
-
-    function showTooltip(text, anchorEl) {
-        tooltip.textContent = text;
-        tooltip.style.display = 'block';
-        placeTooltip(anchorEl);
-        activeTip = anchorEl;
-    }
-
-    function hideTooltip() {
-        tooltip.style.display = 'none';
-        activeTip = null;
-    }
-
-    function placeTooltip(el) {
-        const r   = el.getBoundingClientRect();
-        const gap = 10;
-        tooltip.style.top  = '0';
-        tooltip.style.left = '0';
-        const tw = tooltip.offsetWidth;
-        const th = tooltip.offsetHeight;
-
-        let top  = r.top - th - gap;
-        let left = r.left;
-
-        if (top < 4)                           top  = r.bottom + gap;
-        if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
-        if (left < 4)                          left = 4;
-
-        tooltip.style.top  = top  + 'px';
-        tooltip.style.left = left + 'px';
-    }
-
-    // Desktop hover
-    document.addEventListener('mouseover', e => {
-        const banner = e.target.closest('[data-tip]');
-        banner ? showTooltip(banner.dataset.tip, banner) : hideTooltip();
-    });
-
-    // Mobile tap — tap banner opens tooltip, second tap navigates
-    document.addEventListener('touchend', e => {
-        const banner = e.target.closest('[data-tip]');
-        if (banner) {
-            if (activeTip === banner) {
-                // second tap — let the click handler fire (navigate)
-                hideTooltip();
-                return;
-            }
-            e.preventDefault();
-            showTooltip(banner.dataset.tip, banner);
-        } else {
-            hideTooltip();
+    function redirectIfExpired(res) {
+        if (res.status === 401 || res.status === 419) {
+            window.location.href = '/index.html';
+            return true;
         }
-    }, { passive: false });
+        return false;
+    }
 
-    // ── Build banner ──────────────────────────────────────────
-    function buildBanner(monster, monsterDescs) {
+    // ── Build banner (filled monster) ─────────────────────────
+    function buildBanner(monster) {
         const div = document.createElement('div');
         div.className = 'monster-banner';
+        div.addEventListener('click', () => window.location.href = `./viewMonster.html?id=${monster.id}`);
 
-        if (monster) {
-            // Set tooltip to the monster type description from gameInfo
-            div.dataset.tip = monsterDescs[monster.type] ?? monster.type;
-            div.addEventListener('click', () => window.location.href = `./viewMonster.html?id=${monster.id}`);
+        const img = document.createElement('img');
+        img.className = 'banner-img';
+        img.src = `images/${monster.type}.png`;
+        img.alt = '';
+        img.title = '';
+        div.appendChild(img);
 
-            const img = document.createElement('img');
-            img.src = `images/${monster.type}.png`;
-            img.alt = monster.type;
-            div.appendChild(img);
+        const body = document.createElement('div');
+        body.className = 'banner-body';
 
-            const info = document.createElement('div');
-            info.className = 'monster-info';
+        const name = document.createElement('div');
+        name.className = 'banner-name';
+        name.textContent = `${monster.name}, the ${monster.type}`;
+        body.appendChild(name);
 
-            const nameLine = document.createElement('div');
-            nameLine.className   = 'monster-name-line';
-            nameLine.textContent = `${monster.name}, the ${monster.type}`;
-            info.appendChild(nameLine);
-
-            const metaLine = document.createElement('div');
-            metaLine.className   = 'monster-meta-line';
-            const pts = monster.skillpoints > 0 ? `  (+${monster.skillpoints} pts!)` : '';
-            metaLine.textContent = `LVL:${monster.level}  EXP:${monster.exp}/${monster.level * 2}${pts}`;
-            info.appendChild(metaLine);
-
-            // Stat line — keys come from the monster object, no hardcoding
-            // We skip: id, name, type, level, exp, skillpoints (meta fields)
-            const SKIP = new Set(['id', 'name', 'type', 'level', 'exp', 'skillpoints']);
-            const statsLine = document.createElement('div');
-            statsLine.className = 'monster-stats-line';
-            for (const [k, v] of Object.entries(monster)) {
-                if (SKIP.has(k)) continue;
-                const span = document.createElement('span');
-                span.textContent = `${k}:${v}`;
-                statsLine.appendChild(span);
-            }
-            info.appendChild(statsLine);
-
-            div.appendChild(info);
-        } else {
-            const img = document.createElement('img');
-            img.src = 'images/NA.png';
-            img.alt = 'empty';
-            div.appendChild(img);
-
-            const empty = document.createElement('div');
-            empty.className   = 'empty-banner';
-            empty.textContent = 'Empty slot — create a monster!';
-            div.appendChild(empty);
-
-            div.addEventListener('click', () => window.location.href = 'createMonster.html');
+        const meta = document.createElement('div');
+        meta.className = 'banner-meta';
+        const lvlSpan = document.createElement('span');
+        lvlSpan.textContent = `LVL ${monster.level}`;
+        const expSpan = document.createElement('span');
+        expSpan.textContent = `EXP ${monster.exp} / ${monster.level * 2}`;
+        meta.appendChild(lvlSpan);
+        meta.appendChild(expSpan);
+        if (monster.skillpoints > 0) {
+            const pts = document.createElement('span');
+            pts.className = 'banner-pts';
+            pts.textContent = `+${monster.skillpoints} pts`;
+            meta.appendChild(pts);
         }
+        body.appendChild(meta);
 
+        const SKIP = new Set(['id', 'name', 'type', 'level', 'exp', 'skillpoints']);
+        const statsGrid = document.createElement('div');
+        statsGrid.className = 'banner-stats';
+        for (const [k, v] of Object.entries(monster)) {
+            if (SKIP.has(k)) continue;
+            const cell = document.createElement('div');
+            cell.className = 'banner-stat';
+            const key = document.createElement('span');
+            key.className = 'banner-stat-key';
+            key.textContent = k;
+            const val = document.createElement('span');
+            val.className = 'banner-stat-val';
+            val.textContent = v;
+            cell.appendChild(key);
+            cell.appendChild(val);
+            statsGrid.appendChild(cell);
+        }
+        body.appendChild(statsGrid);
+        div.appendChild(body);
+        return div;
+    }
+
+    // ── Build empty slot banner ───────────────────────────────
+    function buildEmptyBanner() {
+        const div = document.createElement('div');
+        div.className = 'empty-banner';
+        div.addEventListener('click', () => window.location.href = 'createMonster.html');
+
+        const img = document.createElement('img');
+        img.src = 'images/NA.png';
+        img.alt = 'empty';
+        div.appendChild(img);
+
+        const text = document.createElement('div');
+        text.className = 'empty-text';
+        text.textContent = '[ empty slot ]\ncreate a new monster to fill this slot';
+        div.appendChild(text);
         return div;
     }
 
@@ -228,22 +244,34 @@
     async function load() {
         const msgBox   = document.getElementById('msg');
         const teamList = document.getElementById('team-list');
+        const runBtn   = document.getElementById('new-run-btn');
+        const runHint  = document.getElementById('new-run-hint');
 
         try {
-            const [infoRes, teamRes] = await Promise.all([
-                fetch('/gameInfo?key=Monsters', { method: 'POST'}),
-                fetch('/getMonster', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-            ]);
+            const teamRes = await fetch('/getMonster', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}'
+            });
 
-            const monsterDescs = infoRes.ok ? await infoRes.json() : {};
-            if (!teamRes.ok) { msgBox.textContent = '> failed to load team'; msgBox.style.display = 'block'; return; }
+            if (redirectIfExpired(teamRes)) return;
+            if (!teamRes.ok) {
+                msgBox.textContent = '> failed to load team';
+                msgBox.style.display = 'block';
+                return;
+            }
 
             const data = await teamRes.json();
+            const allFilled = data.length > 0 && data.every(m => m !== null);
 
             teamList.innerHTML = '';
-            for (let i = 0; i < 5; i++) {
-                teamList.appendChild(buildBanner(data[i] ?? null, monsterDescs));
+            for (const m of data) {
+                teamList.appendChild(m ? buildBanner(m) : buildEmptyBanner());
             }
+
+            runBtn.disabled = !allFilled;
+            runHint.classList.toggle('visible', !allFilled);
+
         } catch {
             msgBox.textContent = '> Network error';
             msgBox.style.display = 'block';
@@ -257,10 +285,15 @@
         msgBox.style.display = 'none';
 
         try {
-            const res  = await fetch('/newSGRun', { method: 'POST' });
+            const res = await fetch('/newSGRun', { method: 'POST' });
+            if (redirectIfExpired(res)) return;
             const data = await res.json();
-            if (!res.ok) { msgBox.textContent = '> ' + (data.error || 'Unknown error'); msgBox.style.display = 'block'; }
-            else         { window.location.href = data.redirect || '/'; }
+            if (!res.ok) {
+                msgBox.textContent = '> ' + (data.error || 'Unknown error');
+                msgBox.style.display = 'block';
+            } else {
+                window.location.href = data.redirect || '/';
+            }
         } catch {
             msgBox.textContent = '> Network error';
             msgBox.style.display = 'block';

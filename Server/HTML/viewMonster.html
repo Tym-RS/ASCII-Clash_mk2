@@ -181,6 +181,30 @@
         .stat-readonly:hover { border-color: var(--dim); }
         .stat-readonly .stat-label { color: #1a3a1a; }
         .stat-readonly .stat-value { font-size: 0.7rem; color: #2a5a2a; }
+
+        .delete-link {
+            background: none;
+            border: none;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            color: #3a1a1a;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 0.75rem 0;
+            margin-top: 1.6rem;
+            min-height: 48px;
+            transition: color 0.15s;
+            line-height: 2;
+        }
+
+        .delete-link:hover { color: #7a2a2a; }
+
+        .delete-link.confirming {
+            color: var(--red);
+            text-shadow: 0 0 6px rgba(255,68,68,0.5);
+        }
     </style>
 </head>
 <body>
@@ -232,10 +256,20 @@
         <div class="section-title">&gt; INFO</div>
         <div id="readonly-stats"></div>
 
+        <button class="delete-link" id="delete-btn">&gt; delete monster</button>
+
     </div>
 </div>
 
 <script type="module">
+    function redirectIfExpired(res) {
+        if (res.status === 401 || res.status === 419) {
+            window.location.href = '/index.html';
+            return true;
+        }
+        return false;
+    }
+
     // ── Tooltip ───────────────────────────────────────────────
     const tooltip = document.getElementById('tooltip');
     let activeTip = null;
@@ -263,7 +297,7 @@
         let top  = r.top - th - gap;
         let left = r.left;
 
-        if (top < 4)                          top  = r.bottom + gap;
+        if (top < 4)                           top  = r.bottom + gap;
         if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
         if (left < 4)                          left = 4;
 
@@ -271,13 +305,11 @@
         tooltip.style.left = left + 'px';
     }
 
-    // Desktop hover
     document.addEventListener('mouseover', e => {
         const row = e.target.closest('[data-tip]');
         row ? showTooltip(row.dataset.tip, row) : hideTooltip();
     });
 
-    // Mobile tap
     document.addEventListener('touchend', e => {
         const row = e.target.closest('[data-tip]');
         if (row) {
@@ -294,26 +326,71 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id') || '';
 
-    let levelable = [];   // stats with LevelUp > 0
-    let readonly  = [];   // stats with LevelUp === 0
+    let levelable = [];
+    let readonly  = [];
     let base      = {};
     let current   = {};
     let poolTotal = 0;
 
-    const errorBox = document.getElementById('error-msg');
-    const okBox    = document.getElementById('ok-msg');
-    const applyBtn = document.getElementById('apply-btn');
+    const errorBox  = document.getElementById('error-msg');
+    const okBox     = document.getElementById('ok-msg');
+    const applyBtn  = document.getElementById('apply-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+
+    // ── Delete ────────────────────────────────────────────────
+    let deleteConfirming = false;
+    let deleteResetTimer = null;
+
+    function resetDeleteState() {
+        deleteConfirming = false;
+        deleteBtn.classList.remove('confirming');
+        deleteBtn.textContent = '> delete monster';
+        clearTimeout(deleteResetTimer);
+    }
+
+    deleteBtn.addEventListener('click', async () => {
+        if (!deleteConfirming) {
+            deleteConfirming = true;
+            deleteBtn.classList.add('confirming');
+            deleteBtn.textContent = '> confirm? click again to delete';
+            deleteResetTimer = setTimeout(resetDeleteState, 4000);
+            return;
+        }
+
+        clearTimeout(deleteResetTimer);
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = '> deleting...';
+
+        try {
+            const res = await fetch(`/deleteMonster?id=${encodeURIComponent(id)}`, { method: 'POST' });
+            if (redirectIfExpired(res)) return;
+            if (res.ok) {
+                window.location.href = 'team.html';
+            } else {
+                const msg = await res.text();
+                showErr(msg || 'delete failed');
+                resetDeleteState();
+                deleteBtn.disabled = false;
+            }
+        } catch {
+            resetDeleteState();
+            deleteBtn.disabled = false;
+        }
+    });
+
+    applyBtn.addEventListener('click', resetDeleteState);
 
     // ── Load ──────────────────────────────────────────────────
     async function load() {
         try {
             const [infoRes, monsterRes] = await Promise.all([
-                fetch('/gameInfo?key=Stats', {method: 'POST'}),
+                fetch('/gameInfo?key=Stats', { method: 'POST' }),
                 fetch(`/getMonster?id=${encodeURIComponent(id)}`, { method: 'POST' })
             ]);
 
-            if (!infoRes.ok)    { showErr('failed to load game info'); return; }
-            if (!monsterRes.ok) { showErr(await monsterRes.text()); return; }
+            if (!infoRes.ok)                { showErr('failed to load game info'); return; }
+            if (redirectIfExpired(monsterRes)) return;
+            if (!monsterRes.ok)             { showErr(await monsterRes.text()); return; }
 
             const gameStats = await infoRes.json();
             const arr       = await monsterRes.json();
@@ -321,13 +398,12 @@
             if (!arr?.length || !arr[0]) { showErr('monster not found'); return; }
             const m = arr[0];
 
-            // Build stat lists purely from gameInfo
             levelable = [];
             readonly  = [];
             for (const [label, info] of Object.entries(gameStats)) {
                 const entry = {
-                    label,                      // PascalCase key from server, used for API calls
-                    key: label.toLowerCase(),   // matches monster JSON fields
+                    label,
+                    key: label.toLowerCase(),
                     step: info.LevelUp,
                     tip:  info.Description
                 };
@@ -354,20 +430,19 @@
             renderStats();
             document.getElementById('monster-view').style.display = 'block';
 
-        } catch {
-            showErr('network error');
-        }
+        } catch { /* session_expired handled by apiFetch */ }
     }
 
     // ── Render ────────────────────────────────────────────────
     function renderStats() {
+        resetDeleteState();
+
         const spent = levelable.reduce((acc, s) => acc + (current[s.key] - base[s.key]) / s.step, 0);
         const left  = poolTotal - spent;
 
         document.getElementById('points-left').textContent = left;
         applyBtn.disabled = spent === 0;
 
-        // Levelable stats
         const lDiv = document.getElementById('levelable-stats');
         lDiv.innerHTML = '';
         levelable.forEach(s => {
@@ -385,7 +460,7 @@
             minus.className   = 'stat-btn';
             minus.textContent = '-';
             minus.disabled    = current[s.key] <= base[s.key];
-            minus.addEventListener('click', e => { e.stopPropagation(); current[s.key] -= s.step; renderStats(); });
+            minus.addEventListener('click', e => { e.stopPropagation(); resetDeleteState(); current[s.key] -= s.step; renderStats(); });
 
             const val = document.createElement('div');
             val.className   = 'stat-value';
@@ -395,7 +470,7 @@
             plus.className   = 'stat-btn';
             plus.textContent = '+';
             plus.disabled    = left <= 0;
-            plus.addEventListener('click', e => { e.stopPropagation(); current[s.key] += s.step; renderStats(); });
+            plus.addEventListener('click', e => { e.stopPropagation(); resetDeleteState(); current[s.key] += s.step; renderStats(); });
 
             const controls = document.createElement('div');
             controls.className = 'stat-controls';
@@ -409,7 +484,6 @@
             lDiv.appendChild(row);
         });
 
-        // Readonly stats
         const rDiv = document.getElementById('readonly-stats');
         rDiv.innerHTML = '';
         readonly.forEach(s => {
@@ -451,6 +525,7 @@
                 body: JSON.stringify(deltas),
             });
 
+            if (redirectIfExpired(res)) return;
             if (res.ok) {
                 levelable.forEach(s => base[s.key] = current[s.key]);
                 poolTotal -= totalSpent;
@@ -462,9 +537,7 @@
                 levelable.forEach(s => current[s.key] = base[s.key]);
                 renderStats();
             }
-        } catch {
-            showErr('network error');
-        }
+        } catch {}
     });
 
     function showErr(msg) { errorBox.textContent = '> ' + msg; errorBox.style.display = 'block'; }

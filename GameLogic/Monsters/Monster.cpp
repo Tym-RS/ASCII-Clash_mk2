@@ -5,12 +5,12 @@
 
 Monster::Monster(std::string name, const int id, const MonsterType type) : Name(std::move(name)),
                                                                            ID(id), Type(type),
-                                                                           currentHealth(
-                                                                               GetStatDict().Get(Stat::Health)) {
+                                                                           currentHealth(1) {
+    currentHealth = GetStatDict()->Get(Stat::Health);
 }
 
 Monster::Monster(std::string name, const int id, const MonsterType type, const StatDict &stats) : Name(std::move(name)),
-    ID(id), Type(type), stats(stats), currentHealth(stats.Get(Stat::Health)) {
+    ID(id), Type(type), currentHealth(stats.Get(Stat::Health)), stats(stats) {
 }
 
 bool Monster::IsAlive() const {
@@ -24,23 +24,23 @@ void Monster::Attack(Monster *target) {
 
 void Monster::TakeDamage(const int amount) {
     currentHealth -= amount;
-    std::ranges::clamp(currentHealth, 0, GetStatDict().Get(Stat::Health));
+    std::ranges::clamp(currentHealth, 0, GetStatDict()->Get(Stat::Health));
     TryLog(Name + " takes " + std::to_string(amount) + " damage.", LogType::info);
 }
 
 void Monster::Heal(const int amount) {
     currentHealth += amount;
-    std::ranges::clamp(currentHealth, 0, GetStatDict().Get(Stat::Health));
+    std::ranges::clamp(currentHealth, 0, GetStatDict()->Get(Stat::Health));
     TryLog(Name + " heals " + std::to_string(amount) + " HP.", LogType::info);
 }
 
 bool Monster::ReceiveAttack(Monster *from) {
-    if (CalculateHitChance(from->GetStatDict().Get(Stat::Offense), GetStatDict().Get(Stat::Defense)) > RandomPCT()) {
+    if (CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defense)) > RandomPCT()) {
         TryLog(Name + " has dodged.", LogType::event);
         return false;
     }
     TryLog(Name + " was hit.", LogType::event);
-    TakeDamage(from->GetStatDict().Get(Stat::Damage));
+    TakeDamage(from->GetStatDict()->Get(Stat::Damage));
     return true;
 }
 

@@ -5,6 +5,7 @@
 
 #include "GameLogic/Monsters/Monsters.h"
 #include "Server/PlayerSession.h"
+#include "Config.h"
 
 inline const std::string DBPaths = "Database/DB_Files/";
 
@@ -14,20 +15,26 @@ public:
 
     bool TryRegisterPlayer(const std::string *username, const std::string *password, std::string *err) const;
 
+    bool TryCreateMonster(const std::string &name, MonsterType type, PlayerSession *player,
+                          std::string *err = nullptr) const;
+
+    void DeleteMonster(const int id, PlayerSession *player) const;
+
     PlayerSession *GetNewPlayerSession(const std::string *username, const std::string *password) const;
 
     void SavePlayer(const PlayerSession *toSave) const;
 
-    void GetScoreboard() const;
+    [[nodiscard]] std::vector<std::tuple<std::string, int> > GetLeaderBoard() const;
+
+    void LoadMonstersIntoPlayer(PlayerSession *player) const;
 
     ~DBManager();
 
 private:
     void InitDB() const;
 
-    void FillPlayerMonsters(PlayerSession *player) const;
 
-    void SaveMonster(Monster *toSave, const PlayerSession *owner) const;
+    void SaveMonster(Monster *toSave, int owner_id) const;
 
 
     sqlite3 *db{};

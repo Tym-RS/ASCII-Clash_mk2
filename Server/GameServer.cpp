@@ -39,6 +39,16 @@ GameServer::GameServer(const DBManager &db) : db(db), server(Server()) {
         StartSession(&usr, &pwd, res);
     });
 
+    server.Post("/leaderBoard", [this](const Request &req, Response &res) {
+        json j = json::array();
+        for (const auto &[name, score]: this->db.GetLeaderBoard())
+            j.push_back({
+                {"username", name},
+                {"score", score}
+            });
+        res.set_content(j.dump(), "application/json");
+    });
+
     server.Post("/register", [this](const Request &req, Response &res) {
         std::string error;
         const std::string usr = req.get_param_value("username");
@@ -67,47 +77,84 @@ GameServer::GameServer(const DBManager &db) : db(db), server(Server()) {
         }
     });
 
+    server.Post("/score", [this](const Request &req, Response &res) {
+        const auto player = GetSession(req, res);
+        if (!player) return;
+        res.status = 200;
+        res.set_content(std::to_string(player->Score), "text/plain");
+    });
+
     server.Post("/levelMonster", [this](const Request &req, Response &res) {
         const auto player = GetSession(req, res);
         if (!player) return;
 
-        if (!req.has_param("id")) {
-            res.status = 401;
-            res.set_content("No ID provided.", "text/plain");
-            return;
-        }
         int id = 0;
+        json data;
         try {
+            data = json::parse(req.body);
             id = std::stoi(req.get_param_value("id"));
         } catch (const std::exception &e) {
-            res.set_content(e.what(), "text/plain");
+            res.set_content("Invalid Inputs.", "text/plain");
             res.status = 401;
-        }
-
-        json data;
-        try { data = json::parse(req.body); } catch (const std::exception &e) {
-            res.status = 401;
-            res.set_content("Invalid level JSON.", "text/plain");
-        }
-        std::string err;
-        if (player->TryLevelMonster(id, data, &err)) {
-            res.status = 200;
             return;
         }
-        res.status = 401;
-        res.set_content(err, "text/plain");
+
+        std::string err;
+        if (!player->TryLevelMonster(id, data, &err)) {
+            res.set_content(err, "text/plain");
+            res.status = 401;
+            return;
+        }
+        res.status = 200;
+    });
+
+    server.Post("/createMonster", [this](const Request &req, Response &res) {
+        PlayerSession *player = GetSession(req, res);
+        if (!player) return;
+        std::string name;
+        MonsterType type;
+        try {
+            name = req.get_param_value("name");
+            type = MonsterTypeStringMap.at(req.get_param_value("type"));
+        } catch (const std::exception &e) {
+            res.status = 401;
+            res.set_content("Wrong inputs.", "text/plain");
+            return;
+        }
+        std::string err;
+        if (!this->db.TryCreateMonster(name, type, player, &err)) {
+            res.status = 401;
+            res.set_content(err, "text/plain");
+            return;
+        }
+        this->db.LoadMonstersIntoPlayer(player);
+        res.status = 200;
+    });
+
+    server.Post("/deleteMonster", [this](const Request &req, Response &res) {
+        const auto player = GetSession(req, res);
+        if (!player) return;
+        try {
+            this->db.DeleteMonster(std::stoi(req.get_param_value("id")), player);
+        } catch (const std::exception &e) {
+            res.status = 401;
+            res.set_content("Wrong inputs.", "text/plain");
+        }
     });
 
     server.Post("/logout", [this](const Request &req, Response &res) {
-        const auto session = GetSession(req, res);
-        if (!session) return;
-        DeleteSession(session);
+        const auto player = GetSession(req, res);
+        if (!player) return;
+        DeleteSession(player);
         res.set_header("Set-Cookie", "session=; Max-Age=0; HttpOnly; Path=/; SameSite=Strict");
         res.set_redirect("/");
     });
 
-    server.Post("/newSGRun", [this](const Request &req, Response &res) {
-        // TODO
+    server.Post("/startRun", [this](const Request &req, Response &res) {
+        const auto player = GetSession(req, res);
+        if (!player)return;
+
+        res.status = 501;
     });
 }
 
@@ -128,7 +175,7 @@ void GameServer::StartSession(const std::string *usr, const std::string *pwd, Re
     res.status = 200;
 }
 
-PlayerSession *GameServer::GetSession(const Request &req, Response &res) const {
+PlayerSession *GameServer::GetSession(const Request &req, Response &res) {
     const auto sessionID = GetCookie("session", req);
     PlayerSession *session = nullptr;
 
@@ -140,7 +187,9 @@ PlayerSession *GameServer::GetSession(const Request &req, Response &res) const {
         return session;
     }
 
-    res.status = 401;
+    if (session) DeleteSession(session);
+
+    res.status = 419;
     res.set_content("Session expired.", "text/plain");
     res.set_redirect("/");
     return nullptr;

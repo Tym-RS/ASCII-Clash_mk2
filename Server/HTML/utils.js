@@ -8,7 +8,7 @@ export function shake(el) {
     el.classList.remove('shake');
     void el.offsetWidth;
     el.classList.add('shake');
-    el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+    el.addEventListener('animationend', () => el.classList.remove('shake'), {once: true});
 }
 
 /**
@@ -32,6 +32,7 @@ export function hideMsg(box) {
 
 /**
  * POST form data to a URL, returns the Response.
+ * Uses apiFetch so session expiry is handled automatically.
  * @param {string} url
  * @param {Object} fields
  * @returns {Promise<Response>}
@@ -40,9 +41,9 @@ export async function postForm(url, fields) {
     const body = Object.entries(fields)
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
         .join('&');
-    return fetch(url, {
+    return apiFetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body,
     });
 }

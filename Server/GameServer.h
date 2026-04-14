@@ -19,7 +19,7 @@ private:
 
     void StartSession(const std::string *usr, const std::string *pwd, httplib::Response &res);
 
-    PlayerSession *GetSession(const httplib::Request &req, httplib::Response &res) const;
+    PlayerSession *GetSession(const httplib::Request &req, httplib::Response &res);
 
     void DeleteSession(const PlayerSession *session);
 };

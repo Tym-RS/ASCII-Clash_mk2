@@ -18,6 +18,7 @@ X(Human,  "Average joe. Works from 9 to 5.") \
 X(Orc,    "A big GREEN savage.") \
 X(Methog, "Hedgehog, but with Metal.") \
 X(Ratmen, "A stealth-sneak rat.")
+#include <regex>
 
 
 namespace Config {
@@ -31,11 +32,13 @@ namespace Config {
     }
 
     namespace Players {
-        inline constexpr int TeamSize = 5;
+        inline static std::regex usernameRegex("^[A-Za-z0-9_()\\-]{1,15}$");
+        constexpr int TeamSize = 5;
     }
 
     namespace Server {
         inline constexpr long SessionTimeout = 9999999;
+        inline constexpr int LeaderboardSize = 100;
     }
 }
 

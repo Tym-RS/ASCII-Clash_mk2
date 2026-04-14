@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Create Monster</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .name-section { margin-bottom: 1.8rem; }
+
+        .carousel {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.4rem;
+        }
+
+        .carousel-btn {
+            background: none;
+            border: 1px solid var(--dim);
+            color: var(--green);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.8rem;
+            width: 2.2rem;
+            height: 2.2rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            line-height: 1;
+            padding: 0;
+            transition: border-color 0.1s, background 0.1s;
+            border-radius: 0;
+            -webkit-appearance: none;
+        }
+
+        .carousel-btn:hover { border-color: var(--green); background: #001a00; }
+        .carousel-btn:active { transform: translate(1px, 1px); }
+
+        .card-wrap {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            min-height: 200px;
+        }
+
+        .monster-card {
+            border: 2px solid var(--dim);
+            background: #080808;
+            padding: 1.2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.9rem;
+            text-align: center;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .monster-card.slide-out-left  { opacity: 0; transform: translateX(-18px); }
+        .monster-card.slide-out-right { opacity: 0; transform: translateX(18px);  }
+        .monster-card.slide-in-left   { animation: slideInLeft  0.18s ease forwards; }
+        .monster-card.slide-in-right  { animation: slideInRight 0.18s ease forwards; }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-18px); }
+            to   { opacity: 1; transform: translateX(0);     }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(18px); }
+            to   { opacity: 1; transform: translateX(0);    }
+        }
+
+        .card-img {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border: 1px solid var(--green);
+            image-rendering: pixelated;
+        }
+
+        .card-type {
+            font-size: 0.65rem;
+            color: var(--green);
+            text-shadow: 0 0 6px rgba(0,255,65,0.5);
+        }
+
+        .card-desc {
+            font-size: 0.46rem;
+            color: var(--text);
+            line-height: 2.4;
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.6rem;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--dim);
+            transition: background 0.15s;
+        }
+
+        .dot.active { background: var(--green); box-shadow: 0 0 4px rgba(0,255,65,0.6); }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <form action="team.html" style="margin-bottom:1.5rem;">
+        <input type="submit" value="back">
+    </form>
+
+    <h1>New Monster</h1>
+
+    <div id="error-msg" class="msg-error" style="display:none;"></div>
+
+    <div class="name-section">
+        <label for="monster-name">Name</label>
+        <input type="text" id="monster-name" placeholder="enter name" autocomplete="off">
+    </div>
+
+    <div class="carousel">
+        <button class="carousel-btn" id="prev">&lt;</button>
+        <div class="card-wrap">
+            <div class="monster-card" id="card">
+                <img class="card-img" id="card-img" src="" alt="">
+                <div class="card-type" id="card-type"></div>
+                <div class="card-desc" id="card-desc"></div>
+            </div>
+        </div>
+        <button class="carousel-btn" id="next">&gt;</button>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <input type="button" id="create-btn" value="[ CREATE ]">
+
+</div>
+
+<script type="module">
+    // postForm now uses apiFetch internally — no need to import apiFetch directly
+    import { shake, showError, hideMsg, postForm } from '/utils.js';
+
+    const errorBox  = document.getElementById('error-msg');
+    const card      = document.getElementById('card');
+    const cardImg   = document.getElementById('card-img');
+    const cardType  = document.getElementById('card-type');
+    const cardDesc  = document.getElementById('card-desc');
+    const dotsEl    = document.getElementById('dots');
+    const createBtn = document.getElementById('create-btn');
+    const container = document.querySelector('.container');
+
+    let types  = [];
+    let index  = 0;
+    let locked = false;
+
+    // ── Load monster types ────────────────────────────────────
+    async function load() {
+        try {
+            const res = await fetch('/gameInfo?key=Monsters', { method: 'POST' });
+            if (!res.ok) { showError(errorBox, 'failed to load monster types'); return; }
+
+            const data = await res.json();
+            types = Object.entries(data).map(([name, desc]) => ({ name, desc }));
+
+            buildDots();
+            renderCard(null);
+        } catch {
+            showError(errorBox, 'network error');
+        }
+    }
+
+    // ── Dots ──────────────────────────────────────────────────
+    function buildDots() {
+        dotsEl.innerHTML = '';
+        types.forEach((_, i) => {
+            const d = document.createElement('div');
+            d.className = 'dot' + (i === 0 ? ' active' : '');
+            dotsEl.appendChild(d);
+        });
+    }
+
+    function updateDots() {
+        [...dotsEl.children].forEach((d, i) => {
+            d.classList.toggle('active', i === index);
+        });
+    }
+
+    // ── Render card ───────────────────────────────────────────
+    function renderCard(dir) {
+        if (!types.length) return;
+        const t = types[index];
+
+        if (dir === null) {
+            cardImg.src  = `images/${t.name}.png`;
+            cardImg.alt  = t.name;
+            cardType.textContent = t.name;
+            cardDesc.textContent = t.desc;
+            updateDots();
+            return;
+        }
+
+        const outClass = dir === 'left' ? 'slide-out-left' : 'slide-out-right';
+        const inClass  = dir === 'left' ? 'slide-in-left'  : 'slide-in-right';
+
+        card.classList.add(outClass);
+        setTimeout(() => {
+            card.classList.remove(outClass);
+            cardImg.src  = `images/${t.name}.png`;
+            cardImg.alt  = t.name;
+            cardType.textContent = t.name;
+            cardDesc.textContent = t.desc;
+            updateDots();
+            card.classList.add(inClass);
+            card.addEventListener('animationend', () => {
+                card.classList.remove(inClass);
+                locked = false;
+            }, { once: true });
+        }, 160);
+    }
+
+    // ── Navigation ────────────────────────────────────────────
+    document.getElementById('prev').addEventListener('click', () => {
+        if (locked || types.length < 2) return;
+        locked = true;
+        index = (index - 1 + types.length) % types.length;
+        renderCard('right');
+    });
+
+    document.getElementById('next').addEventListener('click', () => {
+        if (locked || types.length < 2) return;
+        locked = true;
+        index = (index + 1) % types.length;
+        renderCard('left');
+    });
+
+    // ── Create ────────────────────────────────────────────────
+    createBtn.addEventListener('click', async () => {
+        hideMsg(errorBox);
+
+        const name = document.getElementById('monster-name').value.trim();
+        if (!name) { showError(errorBox, 'enter a name first'); shake(container); return; }
+        if (!types.length) return;
+
+        const type = types[index].name;
+
+        try {
+            const res = await postForm('/createMonster', { name, type });
+            if (!res.ok) {
+                const msg = await res.text();
+                showError(errorBox, msg);
+                shake(container);
+                return;
+            }
+
+            // Session is valid (we just got a 200), safe to use plain fetch here
+            try {
+                const listRes = await fetch('/getMonster', { method: 'POST' });
+                if (listRes.ok) {
+                    const monsters = await listRes.json();
+                    const match = monsters.find(m => m && m.name === name);
+                    if (match) { window.location.href = `viewMonster.html?id=${match.id}`; return; }
+                }
+            } catch { /* fall through */ }
+
+            window.location.href = 'team.html';
+        } catch {
+            // postForm uses apiFetch internally — session expiry redirects automatically
+        }
+    });
+
+    load();
+</script>
+</body>
+</html>

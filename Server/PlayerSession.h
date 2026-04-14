@@ -22,7 +22,7 @@ public:
 
     const int PlayerID;
     const std::string SessionID;
-    Monster *Monsters[Config::Players::TeamSize];
+    std::array<Monster *, Config::Players::TeamSize> Monsters;
 
     ~PlayerSession();
 
