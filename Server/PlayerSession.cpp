@@ -1,9 +1,12 @@
 #include "PlayerSession.h"
 #include <ctime>
+#include <utility>
 #include "Server/ServerHelpers.h"
 using json = nlohmann::json;
 
-PlayerSession::PlayerSession(const int playerID) : PlayerID(playerID), SessionID(RandomID()), Monsters() {
+PlayerSession::PlayerSession(const int playerID, std::string username) : PlayerID(playerID),
+                                                                         SessionID(RandomID()),
+                                                                         Username(std::move(username)), Monsters() {
     lastActivity = time(nullptr);
 }
 

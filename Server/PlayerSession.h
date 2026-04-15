@@ -8,7 +8,7 @@
 
 class PlayerSession {
 public:
-    explicit PlayerSession(int playerID);
+    explicit PlayerSession(int playerID, std::string username);
 
     [[nodiscard]] bool IsActive() const;
 
@@ -21,7 +21,7 @@ public:
     int Score = 0;
 
     const int PlayerID;
-    const std::string SessionID;
+    const std::string SessionID, Username;
     std::array<Monster *, Config::Players::TeamSize> Monsters;
 
     ~PlayerSession();

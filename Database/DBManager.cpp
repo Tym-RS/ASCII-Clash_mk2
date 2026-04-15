@@ -93,7 +93,7 @@ PlayerSession *DBManager::GetNewPlayerSession(const std::string *username, const
     if (sqlite3_step(stmt) == SQLITE_ROW) id = sqlite3_column_int(stmt, 0);
     sqlite3_finalize(stmt);
     if (id == -1) return nullptr;
-    auto *player = new PlayerSession(id);
+    auto *player = new PlayerSession(id, *username);
     LoadMonstersIntoPlayer(player);
     return player;
 }

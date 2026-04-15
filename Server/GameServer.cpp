@@ -26,7 +26,17 @@ GameServer::GameServer(const DBManager &db) : db(db), server(Server()) {
         }
     });
 
-    server.Post("/gameInfo", [](const Request &req, Response &res) {
+
+    server.Post("/about/me", [this](const Request &req, Response &res) {
+        const auto player = GetSession(req, res);
+        if (!player) return;
+        res.set_content(json({
+                            {"Username", player->Username},
+                            {"Score", player->Score}
+                        }).dump(), "application/json");
+    });
+
+    server.Post("/about/game", [](const Request &req, Response &res) {
         const json data = GetGameDescriptionsJSON();
         std::string key;
         if (req.has_param("key")) key = req.get_param_value("key");
@@ -158,6 +168,7 @@ GameServer::GameServer(const DBManager &db) : db(db), server(Server()) {
     });
 }
 
+
 void GameServer::Run() {
     server.listen("0.0.0.0", 8080);
 }
@@ -189,7 +200,7 @@ PlayerSession *GameServer::GetSession(const Request &req, Response &res) {
 
     if (session) DeleteSession(session);
 
-    res.status = 419;
+    res.status = 308;
     res.set_content("Session expired.", "text/plain");
     res.set_redirect("/");
     return nullptr;
