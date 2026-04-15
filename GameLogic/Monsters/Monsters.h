@@ -3,7 +3,7 @@
 
 #include <string>
 #include "StatDict.h"
-#include "../Fighting/Logger.h"
+#include "../Fighting/FightLogger.h"
 #include "Descriptions.h"
 
 class Monster {
@@ -14,7 +14,7 @@ public:
 
     [[nodiscard]] StatDict *GetStatDict() { return &stats; }
 
-    Logger *LogPtr = nullptr;
+    FightLogger *LogPtr = nullptr;
 
     explicit Monster(std::string name, int ID, MonsterType type);
 
@@ -38,7 +38,7 @@ public:
 protected:
     int currentHealth{};
 
-    void TryLog(const std::string &message, LogType type) const;
+    void TryLog(const std::string &message, LType type) const;
 
 private:
     StatDict stats = StatDict();
@@ -46,39 +46,60 @@ private:
 
 
 // ---------------------------------------------------------------
-#include "Config.h"
-
-inline Monster *CreateTypedMonster(const std::string &name, const int id, MonsterType type) {
-    return new Monster(name, id, type);
-#define X(type)
-
-#undef X
-}
-
-
-class Human final : public Monster {
+template<MonsterType T>
+class TypedMonster : public Monster {
 public:
-    explicit Human(const std::string &name, const int id) : Monster(name, id, MonsterType::Human) {
+    explicit TypedMonster(const std::string &name, const int id)
+        : Monster(name, id, T) {
     }
+
+    explicit TypedMonster(const std::string &name, const int id, const StatDict &stats)
+        : Monster(name, id, T, stats) {
+    }
+};
+
+
+class Human final : public TypedMonster<MonsterType::Human> {
+public:
+    using TypedMonster::TypedMonster;
 
     bool ReceiveAttack(Monster *from) override;
 };
 
-class Orc final : public Monster {
+class Orc final : public TypedMonster<MonsterType::Orc> {
 public:
-    explicit Orc(const std::string &name, const int id) : Monster(name, id, MonsterType::Orc) {
-    }
+    using TypedMonster::TypedMonster;
 
     void Attack(Monster *target) override;
 };
 
-class Methog final : public Monster {
+class Methog final : public TypedMonster<MonsterType::Methog> {
 public:
-    explicit Methog(const std::string &name, const int id) : Monster(name, id, MonsterType::Methog) {
-    }
+    using TypedMonster::TypedMonster;
 
     bool ReceiveAttack(Monster *from) override;
 };
+
+class Ratkin final : public TypedMonster<MonsterType::Ratkin> {
+public:
+    using TypedMonster::TypedMonster;
+};
+
+
+#include "Config.h"
+
+
+inline Monster *CreateTypedMonster(const std::string &name, const int id, const MonsterType type,
+                                   const StatDict *stats = nullptr) {
+    switch (type) {
+#define X(type, ...) case MonsterType::type: return stats? new type(name, id, *stats) : new type(name, id);
+        MONSTER_TYPES
+#undef X
+        default: return stats
+                            ? new Monster(name, id, MonsterType::None, *stats)
+                            : new Monster(name, id, MonsterType::None);
+    }
+}
 
 
 #endif

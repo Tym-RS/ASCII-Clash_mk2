@@ -6,8 +6,8 @@ inline constexpr int headButtDamage = 1;
 
 void Orc::Attack(Monster *target) {
     Monster::Attack(target);
-    if (SoftRatio(GetStatDict()->Get(Stat::Special), specialCounter) < RandomPCT()) return;
-    TryLog(Name + " headbutts " + target->Name + ", dealing damage to both!", LogType::event);
+    if (SoftRatio(GetStatDict()->Get(Stat::Special), specialCounter) < RandomPCT() - 100) return;
+    TryLog(Name + " headbutts " + target->Name + ", dealing damage to both!", LType::Major);
     TakeDamage(headButtDamage);
     target->TakeDamage(headButtDamage * 2);
 }

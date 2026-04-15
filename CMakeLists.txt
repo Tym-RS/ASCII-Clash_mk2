@@ -9,7 +9,7 @@ find_package(SQLite3 REQUIRED)
 add_executable(ASCII_Clash main.cpp
         Config.h
         GameLogic/Monsters/MathHelpers.h
-        GameLogic/Fighting/Logger.h
+        GameLogic/Fighting/FightLogger.h
         GameLogic/Monsters/Stats.h
         GameLogic/Monsters/Monsters.h
         GameLogic/Monsters/Monster.cpp

@@ -142,14 +142,14 @@ void DBManager::LoadMonstersIntoPlayer(PlayerSession *player) const {
         }
         const int id = sqlite3_column_int(stmt, 0);
         const std::string name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-        const std::string type = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+        const std::string typeS = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
         std::array<int, static_cast<int>(Stat::COUNT)> initValues{};
         int stat_i = 3;
         for (const auto &stat: StatStringMap | std::views::values) {
             initValues.at(static_cast<int>(stat)) = sqlite3_column_int(stmt, stat_i);
             stat_i++;
         }
-        player->Monsters[i] = new Monster(name, id, MonsterTypeStringMap.at(type), StatDict(initValues));
+        player->Monsters[i] = CreateTypedMonster(name, id, MonsterTypeStringMap.at(typeS), new StatDict(initValues));
     }
     sqlite3_finalize(stmt);
 }

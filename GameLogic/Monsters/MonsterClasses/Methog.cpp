@@ -3,10 +3,10 @@
 
 bool Methog::ReceiveAttack(Monster *from) {
     if (CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defense)) > RandomPCT()) {
-        TryLog(Name + " has dodged.", LogType::event);
+        TryLog(Name + " has dodged.", LType::Major);
         return false;
     }
-    TryLog(Name + " was hit.", LogType::event);
+    TryLog(Name + " was hit.", LType::Major);
     TakeDamage(from->GetStatDict()->Get(Stat::Damage));
     from->TakeDamage(from->GetStatDict()->Get(Stat::Damage) / 2);
     return true;

@@ -15,7 +15,7 @@ public:
 private:
     const DBManager db;
     httplib::Server server;
-    std::map<std::string, PlayerSession *> sessions;
+    std::map<std::string, PlayerSession *> playerSessions;
 
     void StartSession(const std::string *usr, const std::string *pwd, httplib::Response &res);
 

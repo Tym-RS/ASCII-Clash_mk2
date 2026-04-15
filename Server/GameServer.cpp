@@ -181,7 +181,7 @@ void GameServer::StartSession(const std::string *usr, const std::string *pwd, Re
         res.set_content("login failed <", "text/plain");
         return;
     }
-    sessions.emplace(playerID->SessionID, playerID);
+    playerSessions.emplace(playerID->SessionID, playerID);
     res.set_header("Set-Cookie", "session=" + playerID->SessionID + "; HttpOnly; Path=/; SameSite=Strict");
     res.status = 200;
 }
@@ -190,8 +190,8 @@ PlayerSession *GameServer::GetSession(const Request &req, Response &res) {
     const auto sessionID = GetCookie("session", req);
     PlayerSession *session = nullptr;
 
-    if (sessionID.has_value() && sessions.contains(sessionID.value()))
-        session = sessions.at(sessionID.value());
+    if (sessionID.has_value() && playerSessions.contains(sessionID.value()))
+        session = playerSessions.at(sessionID.value());
 
     if (session && session->IsActive()) {
         session->UpdateLastActivity();
@@ -208,6 +208,6 @@ PlayerSession *GameServer::GetSession(const Request &req, Response &res) {
 
 void GameServer::DeleteSession(const PlayerSession *session) {
     db.SavePlayer(session);
-    sessions.erase(session->SessionID);
+    playerSessions.erase(session->SessionID);
     delete session;
 }

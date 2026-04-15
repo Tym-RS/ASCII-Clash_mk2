@@ -17,9 +17,16 @@ X(SkillPoints, "Each skill-point can level one stat of it's monster. A new point
 X(Human,  "Average joe. Works from 9 to 5.") \
 X(Orc,    "A big GREEN savage.") \
 X(Methog, "Hedgehog, but with Metal.") \
-X(Ratmen, "A stealth-sneak rat.")
-#include <regex>
+X(Ratkin, "A stealth-sneak rat.")
 
+
+#define LOG_TYPES \
+X(Major) \
+X(Minor) \
+X(Nerdy)
+
+
+#include <regex>
 
 namespace Config {
     namespace Monsters {

@@ -11,6 +11,7 @@ enum class MonsterType {
 #define X(type, desc) type,
     MONSTER_TYPES
 #undef X
+    None
 };
 
 

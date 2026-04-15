@@ -18,33 +18,33 @@ bool Monster::IsAlive() const {
 }
 
 void Monster::Attack(Monster *target) {
-    TryLog(Name + " attacks " + target->Name + ".", LogType::event);
+    TryLog(Name + " attacks " + target->Name + ".", LType::Major);
     target->ReceiveAttack(this);
 }
 
 void Monster::TakeDamage(const int amount) {
     currentHealth -= amount;
     std::ranges::clamp(currentHealth, 0, GetStatDict()->Get(Stat::Health));
-    TryLog(Name + " takes " + std::to_string(amount) + " damage.", LogType::info);
+    TryLog(Name + " takes " + std::to_string(amount) + " damage.", LType::Minor);
 }
 
 void Monster::Heal(const int amount) {
     currentHealth += amount;
     std::ranges::clamp(currentHealth, 0, GetStatDict()->Get(Stat::Health));
-    TryLog(Name + " heals " + std::to_string(amount) + " HP.", LogType::info);
+    TryLog(Name + " heals " + std::to_string(amount) + " HP.", LType::Minor);
 }
 
 bool Monster::ReceiveAttack(Monster *from) {
     if (CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defense)) > RandomPCT()) {
-        TryLog(Name + " has dodged.", LogType::event);
+        TryLog(Name + " has dodged.", LType::Major);
         return false;
     }
-    TryLog(Name + " was hit.", LogType::event);
+    TryLog(Name + " was hit.", LType::Major);
     TakeDamage(from->GetStatDict()->Get(Stat::Damage));
     return true;
 }
 
-void Monster::TryLog(const std::string &message, const LogType type) const {
+void Monster::TryLog(const std::string &message, const LType type) const {
     if (LogPtr == nullptr) return;
-    LogPtr->Log(message, type);
+    LogPtr->Append(message, type);
 }

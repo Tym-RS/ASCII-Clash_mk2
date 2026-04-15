@@ -19,7 +19,7 @@ public:
     bool TryLevelMonster(int id, nlohmann::json data, std::string *err) const;
 
     int Score = 0;
-
+    bool AutoFight = false;
     const int PlayerID;
     const std::string SessionID, Username;
     std::array<Monster *, Config::Players::TeamSize> Monsters;
