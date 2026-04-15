@@ -1,306 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Clash — Your Team</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .monster-banner {
-            display: flex;
-            align-items: stretch;
-            border: 1px solid var(--dim);
-            margin-bottom: 0.8rem;
-            background: #0a0a0a;
-            cursor: pointer;
-            transition: background 0.1s, border-color 0.1s;
-        }
-
-
-
-        .banner-img {
-            width: 76px;
-            min-height: 76px;
-            flex-shrink: 0;
-            object-fit: cover;
-            border-right: 1px solid var(--dim);
-            image-rendering: pixelated;
-            display: block;
-        }
-
-
-
-        .banner-body {
-            flex: 1;
-            padding: 0.8rem 0.9rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.55rem;
-            min-width: 0;
-        }
-
-        .banner-name {
-            font-size: 0.65rem;
-            color: var(--green);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .banner-meta {
-            font-size: 0.5rem;
-            color: var(--dim);
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .banner-pts {
-            color: var(--green);
-            opacity: 0.8;
-        }
-
-        .banner-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.3rem 1rem;
-        }
-
-        .banner-stat {
-            font-size: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #0d1f0d;
-            padding-bottom: 0.2rem;
-        }
-
-        .banner-stat-key { color: var(--dim); }
-        .banner-stat-val { color: var(--green); }
-
-        .empty-banner {
-            display: flex;
-            align-items: center;
-            border: 1px dashed #0d2a0d;
-            padding: 1rem;
-            margin-bottom: 0.8rem;
-            background: #080808;
-            cursor: pointer;
-            gap: 0.9rem;
-            transition: border-color 0.15s, background 0.1s;
-        }
-
-        .empty-banner:hover {
-            border-color: var(--dim);
-            background: #0a0f0a;
-        }
-
-        .empty-banner img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            flex-shrink: 0;
-            opacity: 0.3;
-            image-rendering: pixelated;
-        }
-
-        .empty-text {
-            font-size: 0.5rem;
-            color: #1a3a1a;
-            line-height: 2.2;
-        }
-
-        .new-run-row { margin-top: 1.4rem; }
-
-        .new-run-row input[type="submit"]:disabled {
-            background: #1a2a1a;
-            color: #2a4a2a;
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
-        }
-
-        .new-run-hint {
-            font-size: 0.45rem;
-            color: #1a3a1a;
-            text-align: center;
-            margin-top: 0.8rem;
-            line-height: 2.2;
-            display: none;
-        }
-
-        .new-run-hint.visible { display: block; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII Clash — Your Team</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-
-<div class="container">
-
-    <form action="home.html" style="margin-bottom:1.5rem;">
-        <input type="submit" value="back">
-    </form>
-
+  <div class="container">
+    <a href="/home.html" class="nav-back">◀ BACK</a>
     <h1>Your Team</h1>
 
-    <div id="team-list"></div>
+    <div id="teamList" class="loading">loading...</div>
 
-    <div id="msg" class="msg-error" style="display:none;"></div>
-
-    <div class="new-run-row">
-        <form id="newRunForm">
-            <input type="submit" id="new-run-btn" value="New Run" disabled>
-        </form>
-        <div class="new-run-hint" id="new-run-hint">fill all slots to start a run</div>
+    <div style="margin-top:1.25rem">
+      <button class="btn-primary" id="btnRun" disabled>[ NEW RUN ]</button>
+      <p class="hint-text" id="runHint"></p>
     </div>
+  </div>
 
-</div>
+  <script src="/utils.js"></script>
+  <script>
+    // Stat keys that are not displayed in the mini stats grid
+    const SKIP = new Set(['id', 'name', 'type', 'level', 'exp', 'skillpoints']);
 
-<script type="module">
-    function redirectIfExpired(res) {
-        if (res.status === 401 || res.status === 419) {
-            window.location.href = '/index.html';
-            return true;
-        }
-        return false;
+    async function init() {
+      const res = await post('/getMonster');
+      if (!res || !res.ok) return;
+      const slots = await res.json();
+      render(slots);
     }
 
-    // ── Build banner (filled monster) ─────────────────────────
-    function buildBanner(monster) {
-        const div = document.createElement('div');
-        div.className = 'monster-banner';
-        div.addEventListener('click', () => window.location.href = `./viewMonster.html?id=${monster.id}`);
+    function render(slots) {
+      const list = document.getElementById('teamList');
+      list.className = '';
+      list.innerHTML = '';
 
-        const img = document.createElement('img');
-        img.className = 'banner-img';
-        img.src = `images/${monster.type}.png`;
-        img.alt = '';
-        img.title = '';
-        div.appendChild(img);
+      const allFilled = slots.length > 0 && slots.every(s => s !== null);
 
-        const body = document.createElement('div');
-        body.className = 'banner-body';
+      slots.forEach((monster) => {
+        const banner = document.createElement('div');
 
-        const name = document.createElement('div');
-        name.className = 'banner-name';
-        name.textContent = `${monster.name}, the ${monster.type}`;
-        body.appendChild(name);
+        if (!monster) {
+          banner.className = 'monster-banner empty';
+          banner.innerHTML = `
+            <img class="monster-img" src="/images/NA.png" alt="empty slot">
+            <span class="empty-slot-text">[ empty slot ]</span>
+          `;
+          banner.addEventListener('click', () => location.href = '/createMonster.html');
+        } else {
+          banner.className = 'monster-banner';
 
-        const meta = document.createElement('div');
-        meta.className = 'banner-meta';
-        const lvlSpan = document.createElement('span');
-        lvlSpan.textContent = `LVL ${monster.level}`;
-        const expSpan = document.createElement('span');
-        expSpan.textContent = `EXP ${monster.exp} / ${monster.level * 2}`;
-        meta.appendChild(lvlSpan);
-        meta.appendChild(expSpan);
-        if (monster.skillpoints > 0) {
-            const pts = document.createElement('span');
-            pts.className = 'banner-pts';
-            pts.textContent = `+${monster.skillpoints} pts`;
-            meta.appendChild(pts);
+          // Build mini-stats (everything except SKIP keys)
+          const statEntries = Object.entries(monster).filter(([k]) => !SKIP.has(k));
+          const statsHtml = statEntries
+            .map(([k, v]) => `<div class="stats-mini-item">${k}:<b>${v}</b></div>`)
+            .join('');
+
+          const spBadge = monster.skillpoints > 0
+            ? `<div class="sp-badge">+${monster.skillpoints} SP</div>`
+            : '';
+
+          banner.innerHTML = `
+            <img class="monster-img"
+                 src="/images/${encodeURIComponent(monster.type)}.png"
+                 alt="${monster.type}"
+                 onerror="this.src='/images/NA.png'">
+            <div class="monster-info">
+              <div class="monster-name">${monster.name}</div>
+              <div class="monster-type-lv">${monster.type} · LV.${monster.level}</div>
+              <div class="monster-exp">EXP: ${monster.exp} / ${monster.level * 2}</div>
+              ${spBadge}
+              <div class="stats-mini">${statsHtml}</div>
+            </div>
+          `;
+          banner.addEventListener('click', () => location.href = `/viewMonster.html?id=${monster.id}`);
         }
-        body.appendChild(meta);
 
-        const SKIP = new Set(['id', 'name', 'type', 'level', 'exp', 'skillpoints']);
-        const statsGrid = document.createElement('div');
-        statsGrid.className = 'banner-stats';
-        for (const [k, v] of Object.entries(monster)) {
-            if (SKIP.has(k)) continue;
-            const cell = document.createElement('div');
-            cell.className = 'banner-stat';
-            const key = document.createElement('span');
-            key.className = 'banner-stat-key';
-            key.textContent = k;
-            const val = document.createElement('span');
-            val.className = 'banner-stat-val';
-            val.textContent = v;
-            cell.appendChild(key);
-            cell.appendChild(val);
-            statsGrid.appendChild(cell);
-        }
-        body.appendChild(statsGrid);
-        div.appendChild(body);
-        return div;
+        list.appendChild(banner);
+      });
+
+      // "New Run" button state
+      const runBtn  = document.getElementById('btnRun');
+      const runHint = document.getElementById('runHint');
+      runBtn.disabled = !allFilled;
+      runHint.textContent = allFilled ? '' : '> all slots must be filled to start a run';
+
+      runBtn.onclick = async () => {
+        if (runBtn.disabled) return;
+        await post('/startRun'); // server currently returns 501
+      };
     }
 
-    // ── Build empty slot banner ───────────────────────────────
-    function buildEmptyBanner() {
-        const div = document.createElement('div');
-        div.className = 'empty-banner';
-        div.addEventListener('click', () => window.location.href = 'createMonster.html');
-
-        const img = document.createElement('img');
-        img.src = 'images/NA.png';
-        img.alt = 'empty';
-        div.appendChild(img);
-
-        const text = document.createElement('div');
-        text.className = 'empty-text';
-        text.textContent = '[ empty slot ]\ncreate a new monster to fill this slot';
-        div.appendChild(text);
-        return div;
-    }
-
-    // ── Load ──────────────────────────────────────────────────
-    async function load() {
-        const msgBox   = document.getElementById('msg');
-        const teamList = document.getElementById('team-list');
-        const runBtn   = document.getElementById('new-run-btn');
-        const runHint  = document.getElementById('new-run-hint');
-
-        try {
-            const teamRes = await fetch('/getMonster', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: '{}'
-            });
-
-            if (redirectIfExpired(teamRes)) return;
-            if (!teamRes.ok) {
-                msgBox.textContent = '> failed to load team';
-                msgBox.style.display = 'block';
-                return;
-            }
-
-            const data = await teamRes.json();
-            const allFilled = data.length > 0 && data.every(m => m !== null);
-
-            teamList.innerHTML = '';
-            for (const m of data) {
-                teamList.appendChild(m ? buildBanner(m) : buildEmptyBanner());
-            }
-
-            runBtn.disabled = !allFilled;
-            runHint.classList.toggle('visible', !allFilled);
-
-        } catch {
-            msgBox.textContent = '> Network error';
-            msgBox.style.display = 'block';
-        }
-    }
-
-    // ── New Run ───────────────────────────────────────────────
-    document.getElementById('newRunForm').addEventListener('submit', async e => {
-        e.preventDefault();
-        const msgBox = document.getElementById('msg');
-        msgBox.style.display = 'none';
-
-        try {
-            const res = await fetch('/newSGRun', { method: 'POST' });
-            if (redirectIfExpired(res)) return;
-            const data = await res.json();
-            if (!res.ok) {
-                msgBox.textContent = '> ' + (data.error || 'Unknown error');
-                msgBox.style.display = 'block';
-            } else {
-                window.location.href = data.redirect || '/';
-            }
-        } catch {
-            msgBox.textContent = '> Network error';
-            msgBox.style.display = 'block';
-        }
-    });
-
-    load();
-</script>
+    init();
+  </script>
 </body>
 </html>

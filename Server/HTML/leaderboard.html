@@ -4,119 +4,201 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASCII Clash — Leaderboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <style>
-        .lb-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0.8rem;
-            margin-bottom: 0.4rem;
-            border: 1px solid #0d1f0d;
-            background: #0a0a0a;
-            font-size: 0.55rem;
+        /* ── Retro arcade header ── */
+        .arcade-frame {
+            border: 2px solid var(--dim);
+            background: #000;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
         }
 
-        .lb-row.rank-1 { border-color: #ffd700; color: #ffd700; background: #100f00; }
-        .lb-row.rank-2 { border-color: #c0c0c0; color: #c0c0c0; background: #0d0d0d; }
-        .lb-row.rank-3 { border-color: #cd7f32; color: #cd7f32; background: #0f0900; }
-
-        .lb-row.is-me {
-            border-color: var(--green);
-            background: #001a00;
+        .arcade-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                    0deg, transparent, transparent 3px,
+                    rgba(0, 255, 65, 0.025) 3px, rgba(0, 255, 65, 0.025) 4px
+            );
+            pointer-events: none;
         }
 
-        .lb-rank  { width: 3.2rem; flex-shrink: 0; white-space: nowrap; color: inherit; }
-        .lb-name  { flex: 1; padding: 0 0.6rem; color: inherit; }
-        .lb-score { color: inherit; }
-
-        .lb-you-tag {
-            font-size: 0.42rem;
-            color: var(--green);
-            margin-left: 0.5rem;
-            opacity: 0.7;
+        .arcade-frame-top {
+            background: var(--dim);
+            padding: 0.3rem 0.5rem;
+            font-size: 0.4rem;
+            color: #000;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
         }
 
-        .lb-status {
-            font-size: 0.65rem;
+        .arcade-frame-body {
+            padding: 0.75rem 1rem 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 1rem;
+            letter-spacing: 0.15em;
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .arcade-tagline {
+            font-size: 0.4rem;
             color: var(--dim);
-            margin-bottom: 1.4rem;
-            padding: 0.7rem 0.8rem;
-            border: 1px solid #0d1f0d;
-            background: #050f05;
-            line-height: 2.2;
+            letter-spacing: 0.15em;
+            margin-top: 0.3rem;
+            display: block;
+        }
+
+        .arcade-frame-foot {
+            font-size: 0.38rem;
+            color: var(--dim);
+            padding: 0.3rem 0.5rem;
+            border-top: 1px solid rgba(0, 122, 31, 0.25);
+            letter-spacing: 0.2em;
+            animation: blink 1.4s step-end infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── You-status bar ── */
+        .you-status {
+            font-size: 0.45rem;
+            color: var(--green);
+            background: rgba(0, 255, 65, 0.06);
+            border: 1px solid var(--dim);
+            padding: 0.45rem 0.6rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        /* ── Table header ── */
+        .lb-head {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.38rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.3);
+            margin-bottom: 0.35rem;
+        }
+
+        .lb-head .lb-rank {
+            min-width: 1.5rem;
+        }
+
+        .lb-head .lb-medal {
+            width: 1.2rem;
+        }
+
+        .lb-head .lb-name {
+            flex: 1;
+        }
+
+        .lb-head .lb-score {
+            min-width: 4.5rem;
+            text-align: right;
         }
     </style>
 </head>
 <body>
 <div class="container">
+    <a href="/home.html" class="nav-back">◀ BACK</a>
 
-    <form action="home.html" style="margin-bottom:1.5rem;">
-        <input type="submit" value="back">
-    </form>
+    <div class="arcade-frame">
+        <div class="arcade-frame-top">── HALL OF FAME ──</div>
+        <div class="arcade-frame-body">
+            <h1>TOP SCORES</h1>
+            <span class="arcade-tagline"> -- TOP PLAYERS -- </span>
+        </div>
+        <div class="arcade-frame-foot">▶ SOMEONE ELSE MIGHT BE BETTER... ◀</div>
+    </div>
 
-    <h1>Leaderboard</h1>
+    <div class="you-status" id="youStatus"></div>
 
-    <div id="you-status" class="lb-status" style="display:none;"></div>
-    <div id="error-msg" class="msg-error" style="display:none;"></div>
-    <div id="lb-list"></div>
+    <div class="lb-head">
+        <span class="lb-rank">#</span>
+        <span class="lb-medal"></span>
+        <span class="lb-name">PLAYER</span>
+        <span class="lb-score">SCORE</span>
+    </div>
 
+    <div id="lbList" class="loading">loading...</div>
 </div>
 
-<script type="module">
-    const username = sessionStorage.getItem('username');
+<script src="/utils.js"></script>
+<script>
 
-    async function load() {
-        const errorBox  = document.getElementById('error-msg');
-        const list      = document.getElementById('lb-list');
-        const youStatus = document.getElementById('you-status');
+    async function init() {
+        // Fetch leaderboard + current user in parallel
+        const [lbRes, meRes] = await Promise.all([
+            post('/leaderBoard'),
+            post('/about/me'),
+        ]);
 
-        try {
-            const res = await fetch('/leaderBoard', { method: 'POST' });
-            if (!res.ok) { errorBox.textContent = '> failed to load leaderboard'; errorBox.style.display = 'block'; return; }
+        const rows = (lbRes && lbRes.ok) ? await lbRes.json() : [];
+        const meData = (meRes && meRes.ok) ? await meRes.json() : null;
+        const me = meData?.Username ?? null;
 
-            const data = await res.json();
+        const list = document.getElementById('lbList');
+        const youStatus = document.getElementById('youStatus');
 
-            list.innerHTML = '';
+        list.className = '';
+        list.innerHTML = '';
 
-            let myPlace = null;
-            let myScore = null;
+        if (rows.length === 0) {
+            list.innerHTML = `
+          <div style="text-align:center;font-size:0.5rem;color:var(--dim);padding:1.5rem 0">
+            NO SCORES YET
+          </div>`;
+            return;
+        }
 
-            data.forEach((entry, i) => {
-                const rank = i + 1;
-                const isMe = username && entry.username === username;
+        let myRank = null, myScore = null;
 
-                if (isMe) { myPlace = rank; myScore = entry.score; }
-
-                const row = document.createElement('div');
-                row.className = 'lb-row';
-                if (rank === 1) row.classList.add('rank-1');
-                else if (rank === 2) row.classList.add('rank-2');
-                else if (rank === 3) row.classList.add('rank-3');
-                if (isMe) row.classList.add('is-me');
-
-                const medal = rank === 1 ? '[ 1 ]' : rank === 2 ? '[ 2 ]' : rank === 3 ? '[ 3 ]' : `  ${rank} `;
-
-                row.innerHTML = `
-                    <span class="lb-rank">${medal}</span>
-                    <span class="lb-name">${entry.username}${isMe ? '<span class="lb-you-tag">&lt;-- you</span>' : ''}</span>
-                    <span class="lb-score">${entry.score}</span>
-                `;
-                list.appendChild(row);
-            });
-
-            if (myPlace !== null) {
-                youStatus.textContent = `> you are #${myPlace} with ${myScore} points`;
-                youStatus.style.display = 'block';
+        rows.forEach((entry, i) => {
+            const rank = i + 1;
+            const isMe = me && entry.username === me;
+            if (isMe) {
+                myRank = rank;
+                myScore = entry.score;
             }
 
-        } catch {
-            errorBox.textContent = '> network error';
-            errorBox.style.display = 'block';
+            const row = document.createElement('div');
+            row.className = 'lb-rank-row'
+                + (rank <= 3 ? ` rank-${rank}` : '')
+                + (isMe ? ' current-user' : '');
+
+            const youTag = isMe ? '<span class="lb-you-tag">&lt;-- you</span>' : '';
+
+            row.innerHTML = `
+          <span class="lb-rank">#${rank}</span>
+          <span class="lb-name">${entry.username}${youTag}</span>
+          <span class="lb-score">${String(entry.score).padStart(6, '0')}</span>
+        `;
+            list.appendChild(row);
+        });
+
+        if (myRank !== null) {
+            youStatus.textContent = `> you are #${myRank} with ${myScore} points`;
+            youStatus.style.display = 'block';
         }
     }
 
-    load();
+    init();
 </script>
 </body>
 </html>

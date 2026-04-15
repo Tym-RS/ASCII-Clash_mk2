@@ -1,55 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Clash</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII Clash</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="container">
+  <div class="container">
     <h1>ASCII Clash</h1>
 
-    <div id="error-msg" class="msg-error" style="display:none;"></div>
+    <div class="msg-error" id="err"></div>
 
-    <form id="login-form">
+    <form id="loginForm">
+      <div class="field">
         <label for="username">Username</label>
-        <input type="text" id="username" name="username" placeholder="enter name" autocomplete="off">
-
+        <input type="text" id="username" name="username"
+               autocomplete="username" spellcheck="false" required>
+      </div>
+      <div class="field">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password">
-
-        <input type="submit" value="[ LOGIN ]">
+        <input type="password" id="password" name="password"
+               autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-primary">[ LOGIN ]</button>
     </form>
 
-    <a href="register.html">&gt; new player? register here</a>
-</div>
+    <hr class="sep">
+    <a href="/register.html">▶ New player? Register here</a>
+  </div>
 
-<script type="module">
-    import {shake, showError, hideMsg, postForm} from '/utils.js';
-
-    const form = document.getElementById('login-form');
-    const errorBox = document.getElementById('error-msg');
-    const container = document.querySelector('.container');
+  <script src="/utils.js"></script>
+  <script>
+    const form = document.getElementById('loginForm');
+    const err  = document.getElementById('err');
 
     form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        hideMsg(errorBox);
+      e.preventDefault();
+      hideMsg(err);
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
 
-        const res = await postForm('/login', {username, password});
+      const res = await postForm('/login', { username, password });
+      if (!res) return;
 
-        if (res.ok) {
-            sessionStorage.setItem('username', username);
-            window.location.href = '/home.html';
-        } else {
-            const msg = await res.text();
-            showError(errorBox, msg);
-            shake(container);
-        }
+      if (res.ok) {
+        window.location.href = '/home.html';
+      } else {
+        const msg = await res.text();
+        showError(err, msg || 'Login failed');
+        shake(form);
+      }
     });
-</script>
+  </script>
 </body>
 </html>

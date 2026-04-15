@@ -1,549 +1,409 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Clash — Monster</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        #tooltip {
-            position: fixed;
-            z-index: 1000;
-            background: #050f05;
-            border: 1px solid var(--dim);
-            color: var(--text);
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.5rem;
-            padding: 0.7rem 0.8rem;
-            max-width: 240px;
-            line-height: 2.2;
-            pointer-events: none;
-            display: none;
-            box-shadow: 0 0 12px rgba(0,255,65,0.1);
-        }
-
-        .monster-header {
-            display: flex;
-            align-items: center;
-            gap: 1.2rem;
-            margin-bottom: 1.8rem;
-            padding-bottom: 1.2rem;
-            border-bottom: 1px solid var(--dim);
-        }
-
-        .monster-header img {
-            width: 70px;
-            height: 70px;
-            border: 1px solid var(--green);
-            object-fit: cover;
-            image-rendering: pixelated;
-            flex-shrink: 0;
-        }
-
-        .monster-meta {
-            font-size: 0.55rem;
-            color: var(--dim);
-            line-height: 2.6;
-        }
-
-        .monster-meta .name {
-            font-size: 0.7rem;
-            color: var(--text);
-            display: block;
-            margin-bottom: 0.3rem;
-        }
-
-        .exp-section { margin-bottom: 1.4rem; }
-
-        .exp-label {
-            font-size: 0.55rem;
-            color: var(--dim);
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        .exp-track {
-            width: 100%;
-            height: 8px;
-            background: #0d1a0d;
-            border: 1px solid var(--dim);
-            overflow: hidden;
-        }
-
-        .exp-fill {
-            height: 100%;
-            background: var(--green);
-            box-shadow: 0 0 6px rgba(0,255,65,0.6);
-            transition: width 0.4s ease;
-        }
-
-        .points-bar {
-            font-size: 0.6rem;
-            color: var(--text);
-            text-align: center;
-            padding: 0.8rem;
-            border: 1px solid var(--dim);
-            background: #050f05;
-            margin-bottom: 1.2rem;
-        }
-
-        .points-bar .pts {
-            color: var(--green);
-            text-shadow: 0 0 6px rgba(0,255,65,0.6);
-        }
-
-        .section-title {
-            font-size: 0.5rem;
-            color: #1a3a1a;
-            margin: 1.2rem 0 0.6rem;
-            letter-spacing: 0.08em;
-        }
-
-        .stat-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid var(--dim);
-            padding: 0.7rem 0.8rem;
-            margin-bottom: 0.5rem;
-            background: #0a0a0a;
-            cursor: help;
-            transition: background 0.1s, border-color 0.1s;
-        }
-
-        .stat-row:hover { background: #0d1a0d; border-color: var(--green); }
-
-        .stat-label {
-            font-size: 0.55rem;
-            color: var(--dim);
-            width: 3.6rem;
-        }
-
-        .stat-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .stat-value {
-            font-size: 0.75rem;
-            color: var(--green);
-            width: 2.8rem;
-            text-align: center;
-        }
-
-        .stat-delta {
-            font-size: 0.5rem;
-            color: transparent;
-            width: 2rem;
-            text-align: right;
-        }
-
-        .stat-delta.positive {
-            color: var(--green);
-            text-shadow: 0 0 4px rgba(0,255,65,0.5);
-        }
-
-        .stat-btn {
-            background: none;
-            border: 1px solid var(--dim);
-            color: var(--green);
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.7rem;
-            width: 2rem;
-            height: 2rem;
-            cursor: pointer;
-            line-height: 1;
-            padding: 0;
-            transition: border-color 0.1s, background 0.1s;
-            min-height: unset;
-            border-radius: 0;
-            -webkit-appearance: none;
-        }
-
-        .stat-btn:hover:not(:disabled) { border-color: var(--green); background: #001a00; }
-        .stat-btn:active:not(:disabled) { transform: translate(1px,1px); }
-        .stat-btn:disabled { color: #1a3a1a; border-color: #0d1f0d; cursor: default; }
-
-        .stat-readonly {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.65rem 0.8rem;
-            margin-bottom: 0.5rem;
-            border: 1px solid #0d1f0d;
-            background: #080808;
-            cursor: help;
-            transition: border-color 0.1s;
-        }
-
-        .stat-readonly:hover { border-color: var(--dim); }
-        .stat-readonly .stat-label { color: #1a3a1a; }
-        .stat-readonly .stat-value { font-size: 0.7rem; color: #2a5a2a; }
-
-        .delete-link {
-            background: none;
-            border: none;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.5rem;
-            color: #3a1a1a;
-            cursor: pointer;
-            display: block;
-            width: 100%;
-            text-align: center;
-            padding: 0.75rem 0;
-            margin-top: 1.6rem;
-            min-height: 48px;
-            transition: color 0.15s;
-            line-height: 2;
-        }
-
-        .delete-link:hover { color: #7a2a2a; }
-
-        .delete-link.confirming {
-            color: var(--red);
-            text-shadow: 0 0 6px rgba(255,68,68,0.5);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII Clash — Monster</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="container">
+    <a href="/team.html" class="nav-back">◀ BACK</a>
+    <div id="loadingMsg" class="loading">loading...</div>
+    <div id="content" style="display:none"></div>
+  </div>
 
-<div id="tooltip"></div>
+  <!-- Fixed tooltip — lives outside container so it can overlay freely -->
+  <div class="tooltip" id="tooltip"></div>
 
-<div class="container">
+  <script src="/utils.js"></script>
+  <script>
+    // ── Init ────────────────────────────────────────────────
+    const params    = new URLSearchParams(location.search);
+    const monsterId = params.get('id');
+    if (!monsterId) { location.href = '/team.html'; }
 
-    <form action="team.html" style="margin-bottom:1.5rem;">
-        <input type="submit" value="back">
-    </form>
-
-    <h1 id="page-title">Monster</h1>
-
-    <div id="error-msg" class="msg-error" style="display:none;"></div>
-    <div id="ok-msg"    class="msg-ok"    style="display:none;"></div>
-
-    <div id="monster-view" style="display:none;">
-
-        <div class="monster-header">
-            <img id="monster-img" src="" alt="monster">
-            <div class="monster-meta">
-                <span class="name" id="monster-name"></span>
-                <span id="monster-type"></span>
-                <span id="monster-level"></span>
-            </div>
-        </div>
-
-        <div class="exp-section">
-            <div class="exp-label">
-                <span>EXP</span>
-                <span id="exp-text"></span>
-            </div>
-            <div class="exp-track">
-                <div class="exp-fill" id="exp-fill" style="width:0%"></div>
-            </div>
-        </div>
-
-        <div class="points-bar">
-            skill points: <span class="pts" id="points-left">0</span>
-        </div>
-
-        <div class="section-title">&gt; STATS</div>
-        <div id="levelable-stats"></div>
-
-        <input type="submit" id="apply-btn" value="[ APPLY ]"
-               style="width:100%; margin-top:1rem;" disabled>
-
-        <div class="section-title">&gt; INFO</div>
-        <div id="readonly-stats"></div>
-
-        <button class="delete-link" id="delete-btn">&gt; delete monster</button>
-
-    </div>
-</div>
-
-<script type="module">
-    function redirectIfExpired(res) {
-        if (res.status === 401 || res.status === 419) {
-            window.location.href = '/index.html';
-            return true;
-        }
-        return false;
-    }
-
-    // ── Tooltip ───────────────────────────────────────────────
     const tooltip = document.getElementById('tooltip');
-    let activeTip = null;
+    const content = document.getElementById('content');
 
-    function showTooltip(text, anchorEl) {
-        tooltip.textContent = text;
+    const SKIP = new Set(['id', 'name', 'type', 'level', 'exp', 'skillpoints']);
+
+    let monster   = null;   // live monster object (updated on apply)
+    let gameStats = null;   // { StatName: { Default, Description, LevelUp } }
+    let pending   = {};     // { StatName: timesLeveledUp } — reset after apply
+
+    // ── Load data ────────────────────────────────────────────
+    async function init() {
+      const [statsRes, monsterRes] = await Promise.all([
+        post('/about/game?key=Stats'),
+        post('/getMonster?id=' + monsterId),
+      ]);
+
+      if (!statsRes || !monsterRes || !statsRes.ok || !monsterRes.ok) {
+        location.href = '/team.html';
+        return;
+      }
+
+      const statsData   = await statsRes.json();
+      const monsterData = await monsterRes.json();
+
+      gameStats = statsData;
+      monster   = monsterData.find(m => m !== null);
+      if (!monster) { location.href = '/team.html'; return; }
+
+      document.title = `ASCII Clash — ${monster.name}`;
+
+      // Initialise pending map for all levelable stats
+      for (const [statName, info] of Object.entries(gameStats)) {
+        if (info.LevelUp > 0) pending[statName] = 0;
+      }
+
+      document.getElementById('loadingMsg').style.display = 'none';
+      content.style.display = 'block';
+      render();
+    }
+
+    // ── Helpers ──────────────────────────────────────────────
+    function getPool() {
+      return monster.skillpoints - Object.values(pending).reduce((a, b) => a + b, 0);
+    }
+
+    function hasPending() {
+      return Object.values(pending).some(v => v > 0);
+    }
+
+    // ── Full re-render ────────────────────────────────────────
+    function render() {
+      content.innerHTML = '';
+
+      // ── Header ──
+      const header = document.createElement('div');
+      header.className = 'monster-header';
+      header.innerHTML = `
+        <img class="monster-header-img"
+             src="/images/${encodeURIComponent(monster.type)}.png"
+             alt="${monster.type}"
+             onerror="this.src='/images/NA.png'">
+        <div class="monster-header-info">
+          <div class="monster-name">${monster.name}</div>
+          <div class="monster-type-lv">${monster.type} · LV.${monster.level}</div>
+        </div>
+      `;
+      content.appendChild(header);
+
+      // ── EXP bar ──
+      const expMax = monster.level * 2;
+      const expPct = Math.min((monster.exp / expMax) * 100, 100).toFixed(1);
+      appendBar(content, 'EXP', `${monster.exp} / ${expMax}`, expPct, '');
+
+      // ── Skill-points bar ──
+      const pool   = getPool();
+      const spPct  = monster.skillpoints > 0
+        ? Math.max(0, (pool / monster.skillpoints) * 100).toFixed(1)
+        : '0';
+      appendBar(content, 'Skill Points', `${pool} / ${monster.skillpoints}`, spPct, 'sp-fill',
+                'spCount', 'spFill');
+
+      // ── Levelable stats ──
+      const lvSection = document.createElement('div');
+      lvSection.className = 'stats-section';
+      lvSection.innerHTML = '<div class="section-label">Stats</div>';
+
+      const errBox = document.createElement('div');
+      errBox.className = 'msg-error';
+      errBox.id = 'statErr';
+      lvSection.appendChild(errBox);
+
+      for (const [statName, info] of Object.entries(gameStats)) {
+        const key = statName.toLowerCase();
+        if (SKIP.has(key) || !(key in monster) || info.LevelUp <= 0) continue;
+
+        const curVal = monster[key] + pending[statName] * info.LevelUp;
+
+        const row = document.createElement('div');
+        row.className = 'stat-row';
+        row.dataset.tip  = info.Description;
+        row.dataset.stat = statName;
+
+        const hasDelta = pending[statName] > 0;
+
+        row.innerHTML = `
+          <span class="stat-label">${statName}</span>
+          <button class="btn-small" data-action="minus" data-stat="${statName}"
+                  aria-label="decrease ${statName}"
+                  ${pending[statName] <= 0 ? 'disabled' : ''}>−</button>
+          <span class="stat-value" id="val-${statName}">${curVal}</span>
+          <button class="btn-small" data-action="plus" data-stat="${statName}"
+                  aria-label="increase ${statName}"
+                  ${getPool() <= 0 ? 'disabled' : ''}>+</button>
+          <span class="stat-delta${hasDelta ? ' visible' : ''}" id="delta-${statName}">
+            ${hasDelta ? '+' + (pending[statName] * info.LevelUp) : ''}
+          </span>
+        `;
+
+        attachTooltip(row);
+        lvSection.appendChild(row);
+      }
+
+      content.appendChild(lvSection);
+
+      // ── Apply button ──
+      const applyRow = document.createElement('div');
+      applyRow.className = 'apply-row';
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'btn-primary';
+      applyBtn.id        = 'btnApply';
+      applyBtn.disabled  = !hasPending();
+      applyBtn.textContent = '[ APPLY ]';
+      applyRow.appendChild(applyBtn);
+      content.appendChild(applyRow);
+
+      // ── Read-only stats ──
+      const roSection = document.createElement('div');
+      roSection.className = 'stats-section';
+      roSection.innerHTML = '<div class="section-label">Info</div>';
+
+      // skillpoints — live (updated by updatePool())
+      const spRow = document.createElement('div');
+      spRow.className = 'stat-row readonly';
+      spRow.innerHTML = `
+        <span class="stat-label">skillpoints</span>
+        <span class="stat-value" id="spStatVal">${pool}</span>
+      `;
+      roSection.appendChild(spRow);
+
+      // level + exp from monster
+      [['level', monster.level], ['exp', monster.exp]].forEach(([name, val]) => {
+        const row = document.createElement('div');
+        row.className = 'stat-row readonly';
+        row.innerHTML = `
+          <span class="stat-label">${name}</span>
+          <span class="stat-value">${val}</span>
+        `;
+        roSection.appendChild(row);
+      });
+
+      // gameStats entries where LevelUp === 0
+      for (const [statName, info] of Object.entries(gameStats)) {
+        const key = statName.toLowerCase();
+        if (SKIP.has(key) || !(key in monster) || info.LevelUp !== 0) continue;
+
+        const row = document.createElement('div');
+        row.className = 'stat-row readonly';
+        row.dataset.tip = info.Description;
+        row.innerHTML = `
+          <span class="stat-label">${statName}</span>
+          <span class="stat-value">${monster[key]}</span>
+        `;
+        attachTooltip(row);
+        roSection.appendChild(row);
+      }
+
+      content.appendChild(roSection);
+
+      // ── Delete ──
+      const sep = document.createElement('hr');
+      sep.className = 'sep';
+      content.appendChild(sep);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn-danger';
+      deleteBtn.textContent = '[ DELETE MONSTER ]';
+      content.appendChild(deleteBtn);
+
+      // Wire up interactions
+      wireStatButtons(lvSection);
+      wireApply(applyBtn, errBox);
+      wireDelete(deleteBtn);
+    }
+
+    // ── Helpers: bars ────────────────────────────────────────
+    function appendBar(parent, label, valText, pct, fillClass, countId, fillId) {
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-label">
+          <span>${label}</span>
+          <strong${countId ? ` id="${countId}"` : ''}>${valText}</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill${fillClass ? ' ' + fillClass : ''}"
+               ${fillId ? `id="${fillId}"` : ''}
+               style="width:${pct}%"></div>
+        </div>
+      `;
+      parent.appendChild(row);
+    }
+
+    // ── Update skill-point display without full re-render ────
+    function updatePool() {
+      const pool = getPool();
+      const pct  = monster.skillpoints > 0
+        ? Math.max(0, (pool / monster.skillpoints) * 100)
+        : 0;
+
+      const countEl = document.getElementById('spCount');
+      const fillEl  = document.getElementById('spFill');
+      const statEl  = document.getElementById('spStatVal');
+
+      if (countEl) countEl.textContent = `${pool} / ${monster.skillpoints}`;
+      if (fillEl)  fillEl.style.width  = pct + '%';
+      if (statEl)  statEl.textContent  = pool;
+    }
+
+    // ── Stat +/− button handling (event delegation) ──────────
+    function wireStatButtons(section) {
+      section.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn || btn.disabled) return;
+
+        const statName = btn.dataset.stat;
+        const info     = gameStats[statName];
+        const action   = btn.dataset.action;
+
+        if (action === 'plus') {
+          if (getPool() <= 0) return;
+          pending[statName]++;
+        } else {
+          if (pending[statName] <= 0) return;
+          pending[statName]--;
+        }
+
+        // Update value display
+        const baseVal  = monster[statName.toLowerCase()];
+        const newVal   = baseVal + pending[statName] * info.LevelUp;
+        const valEl    = document.getElementById('val-' + statName);
+        const deltaEl  = document.getElementById('delta-' + statName);
+
+        if (valEl) valEl.textContent = newVal;
+
+        if (deltaEl) {
+          if (pending[statName] > 0) {
+            deltaEl.textContent = '+' + (pending[statName] * info.LevelUp);
+            deltaEl.classList.add('visible');
+          } else {
+            deltaEl.textContent = '';
+            deltaEl.classList.remove('visible');
+          }
+        }
+
+        // Refresh disabled state
+        const minusBtn = section.querySelector(`[data-action="minus"][data-stat="${statName}"]`);
+        if (minusBtn) minusBtn.disabled = pending[statName] <= 0;
+
+        const pool = getPool();
+        section.querySelectorAll('[data-action="plus"]').forEach(b => { b.disabled = pool <= 0; });
+
+        updatePool();
+
+        const applyBtn = document.getElementById('btnApply');
+        if (applyBtn) applyBtn.disabled = !hasPending();
+      });
+    }
+
+    // ── Apply button ─────────────────────────────────────────
+    function wireApply(btn, errBox) {
+      btn.addEventListener('click', async () => {
+        if (!hasPending()) return;
+        hideMsg(errBox);
+        btn.disabled = true;
+
+        // Build payload: only stats with pending > 0
+        const body = {};
+        for (const [k, v] of Object.entries(pending)) {
+          if (v > 0) body[k] = v;
+        }
+
+        const res = await postJSON('/levelMonster?id=' + monsterId, body);
+        if (!res) { btn.disabled = false; return; }
+
+        if (res.ok) {
+          // Rebase local state
+          for (const [statName, times] of Object.entries(body)) {
+            const info = gameStats[statName];
+            monster[statName.toLowerCase()] += times * info.LevelUp;
+          }
+          const spent = Object.values(body).reduce((a, b) => a + b, 0);
+          monster.skillpoints -= spent;
+          for (const k in pending) pending[k] = 0;
+          render();
+        } else {
+          const msg = await res.text();
+          showError(errBox, msg || 'Failed to apply changes');
+          for (const k in pending) pending[k] = 0;
+          render();
+        }
+      });
+    }
+
+    // ── Delete button (two-click confirm + 4s timer) ─────────
+    let deleteStage = 0;
+    let deleteTimer = null;
+
+    function wireDelete(btn) {
+      deleteStage = 0;
+      clearTimeout(deleteTimer);
+
+      btn.addEventListener('click', async () => {
+        if (deleteStage === 0) {
+          deleteStage = 1;
+          btn.textContent = '[ CONFIRM DELETE? ]';
+          clearTimeout(deleteTimer);
+          deleteTimer = setTimeout(() => {
+            deleteStage = 0;
+            btn.textContent = '[ DELETE MONSTER ]';
+          }, 4000);
+        } else {
+          clearTimeout(deleteTimer);
+          const res = await post('/deleteMonster?id=' + monsterId);
+          if (!res) return;
+          if (res.ok) location.href = '/team.html';
+        }
+      });
+    }
+
+    // ── Tooltip (hover + tap) ─────────────────────────────────
+    function attachTooltip(row) {
+      const tip = row.dataset.tip;
+      if (!tip) return;
+
+      row.addEventListener('mouseenter', () => {
+        tooltip.textContent = tip;
         tooltip.style.display = 'block';
-        placeTooltip(anchorEl);
-        activeTip = anchorEl;
-    }
+      });
 
-    function hideTooltip() {
-        tooltip.style.display = 'none';
-        activeTip = null;
-    }
-
-    function placeTooltip(el) {
-        const r   = el.getBoundingClientRect();
-        const gap = 10;
-        tooltip.style.top  = '0';
-        tooltip.style.left = '0';
+      row.addEventListener('mousemove', (e) => {
         const tw = tooltip.offsetWidth;
         const th = tooltip.offsetHeight;
+        let x = e.clientX + 14;
+        let y = e.clientY - th - 10;
+        x = Math.min(x, window.innerWidth  - tw - 8);
+        y = Math.max(y, 8);
+        tooltip.style.left = x + 'px';
+        tooltip.style.top  = y + 'px';
+      });
 
-        let top  = r.top - th - gap;
-        let left = r.left;
+      row.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+      });
 
-        if (top < 4)                           top  = r.bottom + gap;
-        if (left + tw > window.innerWidth - 4) left = window.innerWidth - tw - 4;
-        if (left < 4)                          left = 4;
+      row.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        tooltip.textContent = tip;
+        let x = Math.min(touch.clientX, window.innerWidth - 230);
+        let y = touch.clientY - 72;
+        y = Math.max(y, 8);
+        tooltip.style.left = x + 'px';
+        tooltip.style.top  = y + 'px';
+        tooltip.style.display = 'block';
+      }, { passive: true });
 
-        tooltip.style.top  = top  + 'px';
-        tooltip.style.left = left + 'px';
+      row.addEventListener('touchend', () => {
+        setTimeout(() => { tooltip.style.display = 'none'; }, 1500);
+      });
     }
 
-    document.addEventListener('mouseover', e => {
-        const row = e.target.closest('[data-tip]');
-        row ? showTooltip(row.dataset.tip, row) : hideTooltip();
-    });
-
-    document.addEventListener('touchend', e => {
-        const row = e.target.closest('[data-tip]');
-        if (row) {
-            if (e.target.classList.contains('stat-btn')) { hideTooltip(); return; }
-            e.preventDefault();
-            if (activeTip === row) { hideTooltip(); return; }
-            showTooltip(row.dataset.tip, row);
-        } else {
-            hideTooltip();
-        }
-    }, { passive: false });
-
-    // ── State ─────────────────────────────────────────────────
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id') || '';
-
-    let levelable = [];
-    let readonly  = [];
-    let base      = {};
-    let current   = {};
-    let poolTotal = 0;
-
-    const errorBox  = document.getElementById('error-msg');
-    const okBox     = document.getElementById('ok-msg');
-    const applyBtn  = document.getElementById('apply-btn');
-    const deleteBtn = document.getElementById('delete-btn');
-
-    // ── Delete ────────────────────────────────────────────────
-    let deleteConfirming = false;
-    let deleteResetTimer = null;
-
-    function resetDeleteState() {
-        deleteConfirming = false;
-        deleteBtn.classList.remove('confirming');
-        deleteBtn.textContent = '> delete monster';
-        clearTimeout(deleteResetTimer);
-    }
-
-    deleteBtn.addEventListener('click', async () => {
-        if (!deleteConfirming) {
-            deleteConfirming = true;
-            deleteBtn.classList.add('confirming');
-            deleteBtn.textContent = '> confirm? click again to delete';
-            deleteResetTimer = setTimeout(resetDeleteState, 4000);
-            return;
-        }
-
-        clearTimeout(deleteResetTimer);
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = '> deleting...';
-
-        try {
-            const res = await fetch(`/deleteMonster?id=${encodeURIComponent(id)}`, { method: 'POST' });
-            if (redirectIfExpired(res)) return;
-            if (res.ok) {
-                window.location.href = 'team.html';
-            } else {
-                const msg = await res.text();
-                showErr(msg || 'delete failed');
-                resetDeleteState();
-                deleteBtn.disabled = false;
-            }
-        } catch {
-            resetDeleteState();
-            deleteBtn.disabled = false;
-        }
-    });
-
-    applyBtn.addEventListener('click', resetDeleteState);
-
-    // ── Load ──────────────────────────────────────────────────
-    async function load() {
-        try {
-            const [infoRes, monsterRes] = await Promise.all([
-                fetch('/gameInfo?key=Stats', { method: 'POST' }),
-                fetch(`/getMonster?id=${encodeURIComponent(id)}`, { method: 'POST' })
-            ]);
-
-            if (!infoRes.ok)                { showErr('failed to load game info'); return; }
-            if (redirectIfExpired(monsterRes)) return;
-            if (!monsterRes.ok)             { showErr(await monsterRes.text()); return; }
-
-            const gameStats = await infoRes.json();
-            const arr       = await monsterRes.json();
-
-            if (!arr?.length || !arr[0]) { showErr('monster not found'); return; }
-            const m = arr[0];
-
-            levelable = [];
-            readonly  = [];
-            for (const [label, info] of Object.entries(gameStats)) {
-                const entry = {
-                    label,
-                    key: label.toLowerCase(),
-                    step: info.LevelUp,
-                    tip:  info.Description
-                };
-                if (info.LevelUp > 0) levelable.push(entry);
-                else                  readonly.push(entry);
-            }
-
-            poolTotal = m.skillpoints;
-            levelable.forEach(s => { base[s.key] = m[s.key]; current[s.key] = m[s.key]; });
-            readonly.forEach(s  => { base[s.key] = m[s.key]; });
-
-            document.getElementById('page-title').textContent    = m.name;
-            document.getElementById('monster-img').src           = `images/${m.type}.png`;
-            document.getElementById('monster-img').alt           = m.type;
-            document.getElementById('monster-name').textContent  = m.name;
-            document.getElementById('monster-type').textContent  = `TYPE: ${m.type}`;
-            document.getElementById('monster-level').textContent = `LVL:  ${m.level}`;
-
-            const needed = m.level * 2;
-            const pct    = needed > 0 ? Math.min(100, Math.round(m.exp / needed * 100)) : 0;
-            document.getElementById('exp-text').textContent = `${m.exp} / ${needed}`;
-            document.getElementById('exp-fill').style.width = pct + '%';
-
-            renderStats();
-            document.getElementById('monster-view').style.display = 'block';
-
-        } catch { /* session_expired handled by apiFetch */ }
-    }
-
-    // ── Render ────────────────────────────────────────────────
-    function renderStats() {
-        resetDeleteState();
-
-        const spent = levelable.reduce((acc, s) => acc + (current[s.key] - base[s.key]) / s.step, 0);
-        const left  = poolTotal - spent;
-
-        document.getElementById('points-left').textContent = left;
-        applyBtn.disabled = spent === 0;
-
-        const lDiv = document.getElementById('levelable-stats');
-        lDiv.innerHTML = '';
-        levelable.forEach(s => {
-            const delta = (current[s.key] - base[s.key]) / s.step;
-
-            const row = document.createElement('div');
-            row.className   = 'stat-row';
-            row.dataset.tip = s.tip;
-
-            const lbl = document.createElement('div');
-            lbl.className   = 'stat-label';
-            lbl.textContent = s.label;
-
-            const minus = document.createElement('button');
-            minus.className   = 'stat-btn';
-            minus.textContent = '-';
-            minus.disabled    = current[s.key] <= base[s.key];
-            minus.addEventListener('click', e => { e.stopPropagation(); resetDeleteState(); current[s.key] -= s.step; renderStats(); });
-
-            const val = document.createElement('div');
-            val.className   = 'stat-value';
-            val.textContent = current[s.key];
-
-            const plus = document.createElement('button');
-            plus.className   = 'stat-btn';
-            plus.textContent = '+';
-            plus.disabled    = left <= 0;
-            plus.addEventListener('click', e => { e.stopPropagation(); resetDeleteState(); current[s.key] += s.step; renderStats(); });
-
-            const controls = document.createElement('div');
-            controls.className = 'stat-controls';
-            controls.append(minus, val, plus);
-
-            const delt = document.createElement('div');
-            delt.className   = 'stat-delta' + (delta > 0 ? ' positive' : '');
-            delt.textContent = delta > 0 ? `+${delta}` : '+0';
-
-            row.append(lbl, controls, delt);
-            lDiv.appendChild(row);
-        });
-
-        const rDiv = document.getElementById('readonly-stats');
-        rDiv.innerHTML = '';
-        readonly.forEach(s => {
-            const row = document.createElement('div');
-            row.className   = 'stat-readonly';
-            row.dataset.tip = s.tip;
-
-            const lbl = document.createElement('div');
-            lbl.className   = 'stat-label';
-            lbl.textContent = s.label;
-
-            const val = document.createElement('div');
-            val.className   = 'stat-value';
-            val.textContent = s.key === 'skillpoints' ? left : base[s.key];
-
-            row.append(lbl, val);
-            rDiv.appendChild(row);
-        });
-    }
-
-    // ── Apply ─────────────────────────────────────────────────
-    applyBtn.addEventListener('click', async () => {
-        okBox.style.display    = 'none';
-        errorBox.style.display = 'none';
-        hideTooltip();
-
-        const deltas = {};
-        let totalSpent = 0;
-        levelable.forEach(s => {
-            const times = (current[s.key] - base[s.key]) / s.step;
-            if (times > 0) { deltas[s.label] = times; totalSpent += times; }
-        });
-        if (!totalSpent) return;
-
-        try {
-            const res = await fetch(`/levelMonster?id=${encodeURIComponent(id)}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(deltas),
-            });
-
-            if (redirectIfExpired(res)) return;
-            if (res.ok) {
-                levelable.forEach(s => base[s.key] = current[s.key]);
-                poolTotal -= totalSpent;
-                base['skillpoints'] = poolTotal;
-                showOk('changes applied!');
-                renderStats();
-            } else {
-                showErr(await res.text());
-                levelable.forEach(s => current[s.key] = base[s.key]);
-                renderStats();
-            }
-        } catch {}
-    });
-
-    function showErr(msg) { errorBox.textContent = '> ' + msg; errorBox.style.display = 'block'; }
-    function showOk(msg)  { okBox.textContent    = '> ' + msg; okBox.style.display    = 'block'; }
-
-    load();
-</script>
+    init();
+  </script>
 </body>
 </html>

@@ -4,29 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASCII Clash — About</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .about-section {
+            margin-bottom: 2rem;
+        }
+
+        .about-section h2 {
+            font-size: 0.6rem;
+            color: var(--green);
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.4);
+        }
+
+        /* override h2 default margin from base stylesheet */
+        .about-section h2::after { content: none; }
+
+        .about-section p {
+            font-size: 0.5rem;
+            color: var(--text);
+            line-height: 2.3;
+            margin-bottom: 0.75rem;
+            opacity: 0.85;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-
-    <form action="home.html" style="margin-bottom:1.5rem;">
-        <input type="submit" value="back">
-    </form>
-
+    <a href="/home.html" class="nav-back">◀ BACK</a>
     <h1>About</h1>
 
-    <!-- ── SECTION 1 — replace heading & body text as needed ── -->
     <div class="about-section">
-        <h2 class="about-heading">&gt; Section One</h2>
-        <p class="about-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud exercitation.</p>
+        <h2>About This Project</h2>
+        <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+            commodo consequat.
+        </p>
+        <p>
+            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
+            dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+            proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        </p>
     </div>
 
-    <!-- ── SECTION 2 — replace heading & body text as needed ── -->
     <div class="about-section">
-        <h2 class="about-heading">&gt; Section Two</h2>
-        <p class="about-body">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.</p>
+        <h2>Contact</h2>
+        <p>
+            Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
+            doloremque laudantium, totam rem aperiam eaque ipsa quae ab illo inventore
+            veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+        </p>
+        <p>
+            Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit,
+            sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt,
+            neque porro quisquam est qui dolorem ipsum quia dolor sit.
+        </p>
     </div>
-
 </div>
 </body>
 </html>

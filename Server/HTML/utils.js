@@ -1,49 +1,49 @@
-// ── utils.js — reusable UI helpers ───────────────────────────
+// utils.js — global helpers for ASCII Clash (classic script, no ES modules)
 
-/**
- * Shake an element (e.g. on error).
- * @param {HTMLElement} el
- */
-export function shake(el) {
-    el.classList.remove('shake');
-    void el.offsetWidth;
-    el.classList.add('shake');
-    el.addEventListener('animationend', () => el.classList.remove('shake'), {once: true});
+async function apiFetch(url, options) {
+  try {
+    var res = await fetch(url, options || {});
+    if (res.status === 308) { window.location.href = '/index.html'; return null; }
+    return res;
+  } catch (e) {
+    console.error('[apiFetch]', e);
+    return null;
+  }
 }
 
-/**
- * Show an error message in a .msg-error element.
- * @param {HTMLElement} box
- * @param {string}      msg
- */
-export function showError(box, msg) {
-    box.textContent = '> ' + msg;
-    box.style.display = 'block';
+function shake(el) {
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+  el.addEventListener('animationend', function() { el.classList.remove('shake'); }, { once: true });
 }
 
-/**
- * Hide a message box.
- * @param {HTMLElement} box
- */
-export function hideMsg(box) {
-    box.style.display = 'none';
-    box.textContent = '';
+function showError(box, msg) {
+  box.textContent = '> ' + msg;
+  box.style.display = 'block';
 }
 
-/**
- * POST form data to a URL, returns the Response.
- * Uses apiFetch so session expiry is handled automatically.
- * @param {string} url
- * @param {Object} fields
- * @returns {Promise<Response>}
- */
-export async function postForm(url, fields) {
-    const body = Object.entries(fields)
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-        .join('&');
-    return apiFetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body,
-    });
+function hideMsg(box) {
+  box.textContent = '';
+  box.style.display = 'none';
+}
+
+async function postForm(url, fields) {
+  return apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(fields).toString()
+  });
+}
+
+async function postJSON(url, data) {
+  return apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+}
+
+async function post(url) {
+  return apiFetch(url, { method: 'POST' });
 }
