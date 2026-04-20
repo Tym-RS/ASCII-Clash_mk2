@@ -3,7 +3,7 @@
 
 #include <string>
 #include "StatDict.h"
-#include "../Fighting/FightLogger.h"
+#include "../Fighting/NestedLogger.h"
 #include "Descriptions.h"
 
 class Monster {
@@ -14,7 +14,7 @@ public:
 
     [[nodiscard]] StatDict *GetStatDict() { return &stats; }
 
-    FightLogger *LogPtr = nullptr;
+    NestedLogger *LogPtr = nullptr;
 
     explicit Monster(std::string name, int ID, MonsterType type);
 

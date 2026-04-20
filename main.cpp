@@ -6,7 +6,7 @@
 int main(const int argc, const char *argv[]) {
     Monster *human = CreateTypedMonster("Hans", 2, MonsterType::Human);
     Monster *orc = CreateTypedMonster("Morkgkg", 1, MonsterType::Orc);
-    FightLogger logger = FightLogger();
+    NestedLogger logger = NestedLogger();
 
     human->LogPtr = &logger;
     orc->LogPtr = &logger;
