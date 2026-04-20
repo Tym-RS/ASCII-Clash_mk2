@@ -12,7 +12,7 @@ DBManager::DBManager(const std::string &dbName) {
 }
 
 bool DBManager::TryRegisterPlayer(const std::string *username, const std::string *password,
-                                  std::string *err = nullptr) const {
+                                  std::string *err) const {
     if (!std::regex_match(*username, Config::Players::usernameRegex)) {
         if (err) *err = "Username must be 1-15 characters long, no spaces, only letters numbers _ and -";
         return false;
@@ -155,7 +155,7 @@ void DBManager::LoadMonstersIntoPlayer(PlayerSession *player) const {
 }
 
 void DBManager::SaveMonster(Monster *toSave, const int owner_id) const {
-    if (!toSave->IsAlive()) {
+    if (!toSave->CheckIsAlive()) {
         sqlite3_stmt *stmt;
         sqlite3_prepare_v2(db, "DELETE FROM monsters WHERE id = ?", -1, &stmt, nullptr);
         sqlite3_bind_int(stmt, 1, toSave->ID);

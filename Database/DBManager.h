@@ -3,9 +3,8 @@
 #include <sqlite3.h>
 #include <string>
 
-#include "GameLogic/Monsters/Monsters.h"
+#include "GameLogic/Monsters/MonsterFactory.h"
 #include "Server/PlayerSession.h"
-#include "Config.h"
 
 inline const std::string DBPaths = "Database/DB_Files/";
 
@@ -13,12 +12,12 @@ class DBManager {
 public:
     explicit DBManager(const std::string &dbName);
 
-    bool TryRegisterPlayer(const std::string *username, const std::string *password, std::string *err) const;
+    bool TryRegisterPlayer(const std::string *username, const std::string *password, std::string *err = nullptr) const;
 
     bool TryCreateMonster(const std::string &name, MonsterType type, PlayerSession *player,
                           std::string *err = nullptr) const;
 
-    void DeleteMonster(const int id, PlayerSession *player) const;
+    void DeleteMonster(int id, PlayerSession *player) const;
 
     PlayerSession *GetNewPlayerSession(const std::string *username, const std::string *password) const;
 
