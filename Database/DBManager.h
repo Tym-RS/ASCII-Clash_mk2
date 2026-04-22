@@ -3,7 +3,7 @@
 #include <sqlite3.h>
 #include <string>
 
-#include "GameLogic/Monsters/MonsterFactory.h"
+#include "GameLogic/Monsters/CreateMonster.h"
 #include "Server/PlayerSession.h"
 
 inline const std::string DBPaths = "Database/DB_Files/";

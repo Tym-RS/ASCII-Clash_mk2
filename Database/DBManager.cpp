@@ -13,7 +13,7 @@ DBManager::DBManager(const std::string &dbName) {
 
 bool DBManager::TryRegisterPlayer(const std::string *username, const std::string *password,
                                   std::string *err) const {
-    if (!std::regex_match(*username, Config::Players::usernameRegex)) {
+    if (!std::regex_match(*username, Config::Player::usernameRegex)) {
         if (err) *err = "Username must be 1-15 characters long, no spaces, only letters numbers _ and -";
         return false;
     }
@@ -64,9 +64,9 @@ bool DBManager::TryCreateMonster(const std::string &name, const MonsterType type
     sqlite3_finalize(stmt);
 
     LoadMonstersIntoPlayer(player);
-    for (int i = 0; i < Config::Players::TeamSize; i++) {
+    for (int i = 0; i < Config::Player::TeamSize; i++) {
         if (player->Monsters[i]) continue;
-        player->Monsters[i] = CreateTypedMonster(name, nextId, type);
+        player->Monsters[i] = CreateMonster(name, nextId, type);
         SaveMonster(player->Monsters[i], player->PlayerID);
         return true;
     }
@@ -133,7 +133,7 @@ void DBManager::LoadMonstersIntoPlayer(PlayerSession *player) const {
     sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr);
 
     bool done = false;
-    for (int i = 0; i < Config::Players::TeamSize; i++) {
+    for (int i = 0; i < Config::Player::TeamSize; i++) {
         if (player->Monsters[i]) delete player->Monsters[i];
         if (!done) done = sqlite3_step(stmt) != SQLITE_ROW;
         if (done) {
@@ -149,7 +149,7 @@ void DBManager::LoadMonstersIntoPlayer(PlayerSession *player) const {
             initValues.at(static_cast<int>(stat)) = sqlite3_column_int(stmt, stat_i);
             stat_i++;
         }
-        player->Monsters[i] = CreateTypedMonster(name, id, MonsterTypeStringMap.at(typeS), new StatDict(initValues));
+        player->Monsters[i] = CreateMonster(name, id, MonsterTypeStringMap.at(typeS), new StatDict(initValues));
     }
     sqlite3_finalize(stmt);
 }

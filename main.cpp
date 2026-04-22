@@ -4,8 +4,8 @@
 #include "Server/GameServer.h"
 
 int main(const int argc, const char *argv[]) {
-    Monster *human = CreateTypedMonster("Hans", 2, MonsterType::Human);
-    Monster *orc = CreateTypedMonster("Morkgkg", 1, MonsterType::Orc);
+    Monster *human = CreateMonster("Hans", 2, MonsterType::Human);
+    Monster *orc = CreateMonster("Morkgkg", 1, MonsterType::Orc);
     NestedLogger logger = NestedLogger();
 
     human->LogPtr = &logger;

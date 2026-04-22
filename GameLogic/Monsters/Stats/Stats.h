@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 
+
 enum class Stat {
 #define X(stat, ...) stat,
     MONSTER_STATS

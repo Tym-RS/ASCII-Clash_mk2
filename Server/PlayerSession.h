@@ -4,7 +4,6 @@
 #include "nlohmann/json.hpp"
 #include "../Config.h"
 #include "../GameLogic/Monsters/Monsterbase.h"
-#include "GameLogic/Fighting/SinglePlayer/SingleplayerRun.h"
 
 
 class PlayerSession {
@@ -19,20 +18,17 @@ public:
 
     bool TryLevelMonster(int id, nlohmann::json data, std::string *err) const;
 
-    bool TryStartNewRun(std::string *err);
-
     int Score = 0;
     bool AutoFight = false;
     const int PlayerID;
     const std::string SessionID, Username;
-    std::array<Monster *, Config::Players::TeamSize> Monsters;
+    std::array<Monster *, Config::Player::TeamSize> Monsters;
 
     ~PlayerSession();
 
 private:
     [[nodiscard]] Monster *GetMonsterByID(int id) const;
 
-    SingleplayerRun *currentRun;
     long lastActivity;
 };
 

@@ -2,39 +2,89 @@
 #include <utility>
 
 #include "GameLogic/Monsters/Monsterbase.h"
-#include "MathHelpers.h"
+#include "../MathHelpers.h"
 
 Monster::Monster(std::string name, const int id, const MonsterType type)
-    : Name(std::move(name)), ID(id), Type(type), currentHealth(1) {
+    : ID(id), Name(std::move(name)), Type(type) {
     currentHealth = GetStatDict()->Get(Stat::Health);
 }
 
-Monster::Monster(std::string name, const int id, const MonsterType type, const StatDict &stats)
-    : Name(std::move(name)), ID(id), Type(type), currentHealth(stats.Get(Stat::Health)), stats(stats) {
+Monster::Monster(std::string name, const int id, const MonsterType type, StatDict stats)
+    : ID(id), Name(std::move(name)), Type(type), stats(std::move(stats)) {
+}
+
+void Monster::Reset() {
+    currentHealth = GetStatDict()->Get(Stat::Health);
+    healingDone = 0;
+    ResetImpl();
+}
+
+void Monster::Attack(Monster *target) {
+    if (!CheckIsAlive() || !target->CheckIsAlive()) return;
+    AttackImpl(target);
+}
+
+void Monster::TakeDamage(const int amount) {
+    if (!CheckIsAlive()) return;
+    TakeDamageImpl(amount);
+    if (currentHealth <= 0) {
+        currentHealth = 0;
+        OnDeath();
+    }
+}
+
+void Monster::Heal(int amount) {
+    if (!CheckIsAlive()) return;
+
+    const int maxHealth = static_cast<int>(Config::Monster::MaxOverhealth * GetStatDict()->Get(Stat::Health));
+    const int healingCap = static_cast<int>(Config::Monster::MaxHealing * GetStatDict()->Get(Stat::Health));
+    const int headroom = healingCap - healingDone;
+
+    if (headroom <= 0 || amount <= 0) {
+        TryLog(Name + "'s healing is fully exhausted.", LType::Major);
+        return;
+    }
+    if (amount > headroom) {
+        TryLog(Name + " has " + std::to_string(headroom) + " HP of healing headroom left.", LType::Nerdy);
+    }
+
+    amount = std::clamp(amount, 0, headroom);
+    HealImpl(amount);
+    currentHealth = std::min(currentHealth, maxHealth);
+    healingDone += amount;
+}
+
+bool Monster::ReceiveAttack(Monster *from) {
+    if (!CheckIsAlive()) return false;
+    return ReceiveAttackImpl(from);
 }
 
 
 void Monster::AttackImpl(Monster *target) {
-    TryLog(Name + " attacks " + target->Name + ".", LType::Major);
+    TryLog(Name + " swings at " + target->Name + ".", LType::Major);
     target->ReceiveAttack(this);
 }
 
 void Monster::TakeDamageImpl(const int amount) {
     currentHealth -= amount;
-    TryLog(Name + " takes " + std::to_string(amount) + " damage.", LType::Minor);
+    TryLog(Name + " takes " + std::to_string(amount) + " damage. (" +
+           std::to_string(std::max(0, currentHealth)) + " HP remaining)", LType::Minor);
 }
 
 void Monster::HealImpl(const int amount) {
-    currentHealth = std::min(currentHealth + amount, GetStatDict()->Get(Stat::Health));
-    TryLog(Name + " heals " + std::to_string(amount) + " HP.", LType::Minor);
+    currentHealth += amount;
+    TryLog(Name + " recovers " + std::to_string(amount) + " HP.", LType::Minor);
 }
 
 bool Monster::ReceiveAttackImpl(Monster *from) {
-    if (CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defense)) > RandomPCT()) {
-        TryLog(Name + " has dodged.", LType::Major);
+    const int hitChance = static_cast<int>(
+        CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defence)));
+    TryLog(Name + " has a " + std::to_string(hitChance) + "% chance to dodge.", LType::Nerdy);
+    if (hitChance > RandomPCT()) {
+        TryLog(Name + " sidesteps the blow!", LType::Major);
         return false;
     }
-    TryLog(Name + " was hit.", LType::Major);
+    TryLog(Name + " is struck!", LType::Major);
     TakeDamage(from->GetStatDict()->Get(Stat::Damage));
     return true;
 }

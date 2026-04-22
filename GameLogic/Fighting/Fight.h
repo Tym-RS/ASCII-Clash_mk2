@@ -1,45 +1,48 @@
 #ifndef ASCII_CLASH_FIGHT_H
 #define ASCII_CLASH_FIGHT_H
 
-#include "NestedLogger.h"
-#include "Server/PlayerSession.h"
+#include "Log/NestedLogger.h"
 #include <array>
 
-class Fight {
+#include "GameLogic/Team.h"
+
+class Fight final : public JsonSavable<Fight> {
     static constexpr int fightSize = 2;
 
 public:
-    [[nodiscard]] PlayerSession *GetWinner() const { return winner; }
+    [[nodiscard]] Team *GetWinner() const { return winner; }
 
-    explicit Fight(std::array<PlayerSession *, fightSize> players);
+    explicit Fight(std::array<Team *, fightSize> teams);
 
 
-    [[nodiscard]] nlohmann::json AsJson() const;
+    [[nodiscard]] nlohmann::json ToJson() override;
 
-    bool TryTakeTurn(const PlayerSession *initiator, int atkMonID, int defMonID,
+    static Fight *FromJson(const nlohmann::json &j);
+
+    bool TryTakeTurn(const Team *initiator, int atkMonID, int defMonID,
                      std::string *err = nullptr);
 
     const std::string ID;
 
-    ~Fight();
+    ~Fight() override;
 
 private:
     struct MonTuple {
         Monster *attacker, *defender;
     };
 
-    [[nodiscard]] PlayerSession *ActivePlayer() const { return players[turnIndex % fightSize]; }
+    [[nodiscard]] Team *ActiveTeam() const { return teams[turnIndex % fightSize]; }
 
     void ExecuteTurn(MonTuple mons);
 
-    MonTuple AutoPickMons() const;
+    [[nodiscard]] MonTuple AutoPickMons() const;
 
     void UpdateWinner();
 
     NestedLogger log;
-    PlayerSession *winner = nullptr;
+    Team *winner = nullptr;
     int turnIndex = 0;
-    const std::array<PlayerSession *, fightSize> players;
+    const std::array<Team *, fightSize> teams;
 };
 
 #endif

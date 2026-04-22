@@ -2,52 +2,43 @@
 #define ASCII_CLASH_MONSTERBASE_H
 
 #include <string>
-#include "StatDict.h"
-#include "../Fighting/NestedLogger.h"
+#include "Stats/StatDict.h"
+#include "../Fighting/Log/NestedLogger.h"
 #include "Descriptions.h"
+#include "Database/JsonSavable.h"
 
-class Monster {
+class Monster : public JsonSavable<Monster> {
 public:
-    const std::string Name;
     const int ID;
+    const std::string Name;
     const MonsterType Type;
-    const bool IsHealer = false;
+    virtual bool IsHealer() { return false; }
+
+    static Monster *FromJson(const nlohmann::json &j);
+
+    nlohmann::json ToJson() override;
 
     [[nodiscard]] StatDict *GetStatDict() { return &stats; }
 
     NestedLogger *LogPtr = nullptr;
 
-    explicit Monster(std::string name, int ID, MonsterType type);
+    explicit Monster(std::string name, int id, MonsterType type);
 
-    explicit Monster(std::string name, int ID, MonsterType type, const StatDict &stats);
+    explicit Monster(std::string name, int id, MonsterType type, StatDict stats);
 
     [[nodiscard]] bool CheckIsAlive() const { return currentHealth > 0; }
 
     [[nodiscard]] int GetCurrentHealth() const { return currentHealth; }
 
-    void Attack(Monster *target) {
-        if (!CheckIsAlive() || !target->CheckIsAlive()) return;
-        AttackImpl(target);
-    }
+    void Reset();
 
-    void TakeDamage(const int amount) {
-        if (!CheckIsAlive()) return;
-        TakeDamageImpl(amount);
-        if (currentHealth <= 0) {
-            currentHealth = 0;
-            OnDeath();
-        }
-    }
+    void Attack(Monster *target);
 
-    void Heal(const int amount) {
-        if (!CheckIsAlive()) return;
-        HealImpl(amount);
-    }
+    void TakeDamage(int amount);
 
-    bool ReceiveAttack(Monster *from) {
-        if (!CheckIsAlive()) return false;
-        return ReceiveAttackImpl(from);
-    }
+    void Heal(int amount);
+
+    bool ReceiveAttack(Monster *from);
 
     virtual void OnTurnStart() {
     }
@@ -55,12 +46,13 @@ public:
     virtual void OnDeath() {
     }
 
-    virtual ~Monster() = default;
+    ~Monster() override = default;
 
 protected:
-    int currentHealth{};
-
     void TryLog(const std::string &message, LType type) const;
+
+    virtual void ResetImpl() {
+    }
 
     virtual void AttackImpl(Monster *target);
 
@@ -68,9 +60,11 @@ protected:
 
     virtual void HealImpl(int amount);
 
+
     virtual bool ReceiveAttackImpl(Monster *from);
 
 private:
+    int currentHealth{}, healingDone = 0;
     StatDict stats = StatDict();
 };
 

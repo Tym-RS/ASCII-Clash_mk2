@@ -33,7 +33,7 @@ json PlayerSession::GetMonsterJson(const int monsterID) const {
                 {"health", monster->GetStatDict()->Get(Stat::Health)},
                 {"offense", monster->GetStatDict()->Get(Stat::Offense)},
                 {"damage", monster->GetStatDict()->Get(Stat::Damage)},
-                {"defense", monster->GetStatDict()->Get(Stat::Defense)},
+                {"defense", monster->GetStatDict()->Get(Stat::Defence)},
                 {"special", monster->GetStatDict()->Get(Stat::Special)},
                 {"current_health", monster->GetCurrentHealth()},
                 {"is_alive", monster->CheckIsAlive()},
@@ -67,16 +67,6 @@ bool PlayerSession::TryLevelMonster(const int id, nlohmann::json data, std::stri
     }
 
     return true;
-}
-
-bool PlayerSession::TryStartNewRun(std::string *err) {
-    if (currentRun) {
-        if (err) *err = "A singleplayer run is already Active.";
-        return false;
-    }
-    currentRun = new SingleplayerRun();
-    return true;
-    // TODO
 }
 
 PlayerSession::~PlayerSession() {
