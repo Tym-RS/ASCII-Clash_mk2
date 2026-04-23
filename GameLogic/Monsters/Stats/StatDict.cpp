@@ -1,19 +1,19 @@
 #include "StatDict.h"
 
-nlohmann::json StatDict::ToJson() {
+nlohmann::json StatDict::ToJson() const {
     nlohmann::json j;
     for (int i = 0; i < static_cast<int>(Stat::COUNT); i++)
         j[StatInfos[i].AsString] = values[i];
     return j;
 }
 
-StatDict *StatDict::FromJson(nlohmann::json j) {
+StatDict StatDict::FromJson(nlohmann::json j) {
     std::array<int, static_cast<int>(Stat::COUNT)> initValues{};
     for (int i = 0; i < static_cast<int>(Stat::COUNT); i++)
         initValues[i] = j.contains(StatInfos[i].AsString)
                             ? j[StatInfos[i].AsString].get<int>()
                             : StatInfos[i].DefaultValue;
-    return new StatDict(initValues);
+    return StatDict(initValues);
 }
 
 StatDict::StatDict(const std::array<int, static_cast<int>(Stat::COUNT)> &initValues) : values(initValues) {

@@ -7,16 +7,16 @@
 #include "Descriptions.h"
 #include "Database/JsonSavable.h"
 
-class Monster : public JsonSavable<Monster> {
+class Monster : public JsonSavable {
 public:
     const int ID;
     const std::string Name;
     const MonsterType Type;
-    virtual bool IsHealer() { return false; }
+    [[nodiscard]] virtual bool IsHealer() const { return false; }
 
-    static Monster *FromJson(const nlohmann::json &j);
+    static std::unique_ptr<Monster> FromJson(const nlohmann::json &j);
 
-    nlohmann::json ToJson() override;
+    [[nodiscard]] nlohmann::json ToJson() const override;
 
     [[nodiscard]] StatDict *GetStatDict() { return &stats; }
 
@@ -56,12 +56,16 @@ protected:
 
     virtual void AttackImpl(Monster *target);
 
+    void BaseAttack(Monster *target);
+
     virtual void TakeDamageImpl(int amount);
 
     virtual void HealImpl(int amount);
 
 
     virtual bool ReceiveAttackImpl(Monster *from);
+
+    bool BaseReceiveAttack(Monster *from);
 
 private:
     int currentHealth{}, healingDone = 0;

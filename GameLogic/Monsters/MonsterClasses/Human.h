@@ -10,10 +10,12 @@ public:
 
 protected:
     bool ReceiveAttackImpl(Monster *from) override {
-        if (ReceiveAttack(from)) return true;
+        if (BaseReceiveAttack(from)) return true;
 
-        if (SoftRatio(GetStatDict()->Get(Stat::Special), specialCounter) >= RandomPCT()) {
-            TryLog(Name + " performs a riposte!", LType::Major);
+        const int riposteChance = static_cast<int>(SoftRatio(GetStatDict()->Get(Stat::Special), specialCounter));
+        TryLog(Name + " has a " + std::to_string(riposteChance) + "% riposte chance.", LType::Nerdy);
+        if (riposteChance >= RandomPCT()) {
+            TryLog(Name + " strikes back with a riposte!", LType::Major);
             Attack(from);
         }
         return false;

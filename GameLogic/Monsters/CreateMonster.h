@@ -9,37 +9,39 @@
 #include "Config.h"
 
 
-inline Monster *CreateMonster(const std::string &name, const int id, const MonsterType type,
-                              const StatDict *stats = nullptr) {
+inline std::unique_ptr<Monster> CreateMonster(
+    const std::string &name, const int id, const MonsterType type,
+    const StatDict *stats = nullptr) {
     switch (type) {
-#define X(type, ...) case MonsterType::type: return stats ? new type(name, id, *stats) : new type(name, id);
+#define X(type, ...) case MonsterType::type: return stats ? std::make_unique<type>(name, id, *stats) : std::make_unique<type>(name, id);
         MONSTER_TYPES
 #undef X
         default:
             return stats
-                       ? new Monster(name, id, MonsterType::None, *stats)
-                       : new Monster(name, id, MonsterType::None);
+                       ? std::make_unique<Monster>(name, id, MonsterType::None, *stats)
+                       : std::make_unique<Monster>(name, id, MonsterType::None);
     }
 }
 
 
-inline nlohmann::json Monster::ToJson() {
+inline nlohmann::json Monster::ToJson() const {
     return nlohmann::json{
         {"ID", ID},
-        {"Name", Name},
-        {"Type", MonsterDescriptions.at(Type).TypeAsString},
-        {"IsHealer", IsHealer()},
-        {"CurrentHealth", currentHealth},
-        {"Stats", stats.ToJson()}
+        {"name", Name},
+        {"type", MonsterDescriptions.at(Type).TypeAsString},
+        {"is_healer", IsHealer()},
+        {"current_health", currentHealth},
+        {"healing_done", healingDone},
+        {"stats", stats.ToJson()},
     };
 }
 
-inline Monster *Monster::FromJson(const nlohmann::json &j) {
-    const MonsterType type = MonsterTypeStringMap.at(j["Type"].get<std::string>());
-    const StatDict *stats = StatDict::FromJson(j["Stats"]);
-    Monster *m = CreateMonster(j["Name"].get<std::string>(), j["ID"].get<int>(), type, stats);
-    m->currentHealth = j["CurrentHealth"].get<int>();
-    delete stats;
+inline std::unique_ptr<Monster> Monster::FromJson(const nlohmann::json &j) {
+    const MonsterType type = MonsterTypeStringMap.at(j["type"].get<std::string>());
+    const auto stats = StatDict::FromJson(j["stats"]);
+    auto m = CreateMonster(j["name"].get<std::string>(), j["ID"].get<int>(), type, &stats);
+    m->currentHealth = j["current_health"].get<int>();
+    m->healingDone = j["healing_done"].get<int>();
     return m;
 }
 

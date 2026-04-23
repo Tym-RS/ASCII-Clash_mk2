@@ -5,13 +5,13 @@
 #include <string>
 #include <array>
 
-class StatDict final : public JsonSavable<StatDict> {
+class StatDict final : public JsonSavable {
 public:
     StatDict() = default;
 
-    static StatDict *FromJson(nlohmann::json j);
+    static StatDict FromJson(nlohmann::json j);
 
-    nlohmann::json ToJson() override;
+    [[nodiscard]] nlohmann::json ToJson() const override;
 
     void ReceiveEXP(int amount);
 

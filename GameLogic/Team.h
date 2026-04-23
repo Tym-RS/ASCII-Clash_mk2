@@ -1,10 +1,11 @@
 #ifndef ASCII_CLASH_TEAM_H
 #define ASCII_CLASH_TEAM_H
 #include "Config.h"
+#include "Fighting/Fight.h"
 #include "Monsters/Monsterbase.h"
 
 
-class Team final : public JsonSavable<Team> {
+class Team final : public JsonSavable {
 public:
     const std::string Name;
     const int ID;
@@ -13,16 +14,25 @@ public:
 
     explicit Team(std::string name, int id);
 
-    static Team *FromJson(const nlohmann::json &j);
+    static Team FromJson(const nlohmann::json &j);
 
-    nlohmann::json ToJson() override;
+    [[nodiscard]] nlohmann::json ToJson() const override;
 
-    [[nodiscard]] std::array<Monster *, Config::Team::Size> Monsters() const { return monsters; }
+    [[nodiscard]] bool IsInFight() const { return isInFight; }
 
-    ~Team() override;
+    void EnterFight(NestedLogger *l);
+
+    void ExitFight(int expGain = 0);
+
+    [[nodiscard]]
+
+    const std::array<std::unique_ptr<Monster>, Config::Team::Size> &Monsters() const { return monsters; }
+
+    [[nodiscard]] std::array<std::unique_ptr<Monster>, Config::Team::Size> &Monsters() { return monsters; }
 
 private:
-    std::array<Monster *, Config::Team::Size> monsters{};
+    bool isInFight = false;
+    std::array<std::unique_ptr<Monster>, Config::Team::Size> monsters{};
 };
 
 

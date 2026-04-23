@@ -5,6 +5,7 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "Config.h"
+#include "Database/JsonSavable.h"
 
 enum class LType {
 #define X(type) type,
@@ -15,25 +16,40 @@ enum class LType {
 extern const std::map<std::string, LType> LogTypeStringMap;
 extern const std::map<LType, std::string> StringLogTypeMap;
 
-class NestedLogger {
+class NestedLogger final : JsonSavable {
 public:
     NestedLogger();
-    void Append(std::string message, LType type = LType::Minor);
-    void Next(std::string message, LType type = LType::Minor);
-    [[nodiscard]] std::string AsStr() const;
-    [[nodiscard]] nlohmann::json AsJson() const;
 
-    const long StartTime;
+    [[nodiscard]] long StartTime() const { return startTime; }
+
+    static NestedLogger FromJson(nlohmann::json j);
+
+    [[nodiscard]] nlohmann::json ToJson() const override;
+
+    [[nodiscard]] std::string ToStr() const;
+
+    void Append(std::string message, LType type = LType::Minor);
+
+    void Next(std::string message, LType type = LType::Minor);
 
 private:
-    struct LogEntry {
-        explicit LogEntry(std::string header, LType importance = LType::Minor);
-        void Append(const LogEntry &toAdd);
-        [[nodiscard]] std::string AsStr() const;
-        [[nodiscard]] nlohmann::json AsJson() const;
+    long startTime;
 
-        const std::string Header;
-        const LType Importance;
+    struct LogEntry final : JsonSavable {
+        explicit LogEntry(std::string header, LType importance = LType::Minor);
+
+        void Append(const LogEntry &toAdd);
+
+        static LogEntry FromJson(nlohmann::json j);
+
+        [[nodiscard]] nlohmann::json ToJson() const override;
+
+        [[nodiscard]] std::string ToStr() const;
+
+    private:
+        std::string header;
+        LType importance;
+
     private:
         std::vector<LogEntry> logs;
     };

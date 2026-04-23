@@ -1,60 +1,61 @@
 #include "Fight.h"
 #include <string>
-#include <cstdlib>
+#include <nlohmann/json.hpp>
+#include "Database/TableDefs.h"
 
-Fight::Fight(const std::array<Team *, fightSize> players)
+#define JStr(at) COL(Fights, at)
+
+Fight::Fight(const std::array<Team *, FIGHT_SIZE> teams)
     : ID([&] {
         std::size_t h = 0;
-        for (const auto p: players)
-            h ^= (std::hash<std::string>{}(p->) << 1);
+        for (const auto p: teams)
+            h ^= (std::hash<std::string>{}(p->Name) << 1);
         return std::to_string(h);
-    }()), teams(players) {
-    std::string startMessage = "Fight between ";
-    for (size_t i = 0; i < fightSize; ++i) {
-        const auto *p = players[i];
-        startMessage += p->Name;
-        if (i + 1 < players.size()) startMessage += " and ";
-        for (auto *m: p->Monsters()) if (m) m->LogPtr = &log;
-    }
-    startMessage += ".";
-    log.Append(startMessage, LType::Minor);
-
-    turnIndex = std::rand() % fightSize;
+    }()), teams(teams) {
+    for (const auto t: teams) t->EnterFight(&log);
+    turnIndex = std::rand() % FIGHT_SIZE;
     log.Append(ActiveTeam()->Name + " starts!", LType::Major);
 }
 
-nlohmann::json Fight::ToJson() {
-    nlohmann::json pj = nlohmann::json::array();
-    for (const auto p: teams) {
-        int aliveCount = 0, totalCurrentHP = 0;
-        for (const auto m: p->Monsters()) {
-            if (!m || !m->CheckIsAlive()) continue;
-            aliveCount++;
-            totalCurrentHP += m->GetCurrentHealth();
-        }
-        pj.push_back({
-        });
-    }
+nlohmann::json Fight::ToJson() const {
+    nlohmann::json wj = nullptr;
+    if (winner)
+        wj = {
+            {"Name", winner->Name},
+            {"ID", winner->ID}
+        };
+    auto participants = nlohmann::json::array();
+    for (const auto &t: teams) participants.push_back(t->ToJson());
 
     return {
-        {"id", ID},
-        {"is_ongoing", !winner},
-        {"winner", winner ? winner->Name : nullptr},
-        {
-            "active_team", {
-                {"name", ActiveTeam()->Name},
-                {"auto_fight", ActiveTeam()->AutoFight}
-            }
-        },
-        {"turn", turnIndex},
-        {"start_time", log.StartTime},
-        {"players", pj},
-        {"log", log.AsJson()}
+        {JStr(ID), ID},
+        {JStr(is_ongoing), (winner == nullptr)},
+        {JStr(winner), wj},
+        {JStr(active_team), ActiveTeam()->Name},
+        {JStr(turn), turnIndex},
+        {JStr(log), log.ToJson()},
+        {JStr(participants), participants}
     };
 }
 
 
-bool Fight::TryTakeTurn(const PlayerSession *initiator, const int atkMonID, const int defMonID, std::string *err) {
+Fight Fight::FromJson(const nlohmann::json &j, const std::array<Team *, FIGHT_SIZE> teams) {
+    auto fight = Fight(teams);
+    fight.turnIndex = j.value("turn", 0);
+    if (j.contains("winner") && !j["winner"].empty()) {
+        const int winnerID = j["winner"]["ID"].get<int>();
+        for (const auto t: teams) {
+            if (t->ID != winnerID) continue;
+            fight.winner = t;
+            break;
+        }
+    }
+    if (j.contains("log")) fight.log = NestedLogger::FromJson(j["log"]);
+    return fight;
+}
+
+
+bool Fight::TryTakeTurn(const Team *initiator, const int atkMonID, const int defMonID, std::string *err) {
     if (winner) {
         if (err) *err = "Fight is already over.";
         return false;
@@ -65,11 +66,11 @@ bool Fight::TryTakeTurn(const PlayerSession *initiator, const int atkMonID, cons
     }
     Monster *attacker = nullptr, *defender = nullptr;
 
-    for (const auto p: players)
-        for (const auto m: p->Monsters) {
+    for (const auto t: teams)
+        for (auto &m: t->Monsters()) {
             if (!m || !m->CheckIsAlive()) continue;
-            if (m->ID == atkMonID && p == ActiveTeam())attacker = m;
-            if (m->ID == defMonID)defender = m;
+            if (m->ID == atkMonID && t == ActiveTeam())attacker = m.get();
+            if (m->ID == defMonID)defender = m.get();
         }
     if (!attacker || !defender) {
         if (err) *err = "Not all monsters exist and or are capable to fight.";
@@ -80,21 +81,18 @@ bool Fight::TryTakeTurn(const PlayerSession *initiator, const int atkMonID, cons
 }
 
 Fight::~Fight() {
-    for (const auto p: players)
-        for (const auto m: p->Monsters)
-            if (m) m->LogPtr = nullptr;
+    for (const auto t: teams) t->ExitFight();
 }
 
 
-void Fight::ExecuteTurn(MonTuple mons) {
+void Fight::ExecuteTurn(TurnPair mons) {
     do {
         log.Next(mons.attacker->Name + " attacks " + mons.defender->Name, LType::Major);
         mons.attacker->Attack(mons.defender);
 
-        // Team status snapshot after each attack
-        for (auto *team: teams) {
+        for (const auto *team: teams) {
             int alive = 0, total = 0, totalHP = 0, totalMaxHP = 0;
-            for (auto *m: team->Monsters()) {
+            for (auto &m: team->Monsters()) {
                 if (!m) continue;
                 total++;
                 totalMaxHP += m->GetStatDict()->Get(Stat::Health);
@@ -106,7 +104,7 @@ void Fight::ExecuteTurn(MonTuple mons) {
             log.Append(team->Name + ": " + std::to_string(alive) + "/" + std::to_string(total) +
                        " standing, " + std::to_string(totalHP) + "/" + std::to_string(totalMaxHP) + " HP total",
                        LType::Major);
-            for (auto *m: team->Monsters()) {
+            for (auto &m: team->Monsters()) {
                 if (!m) continue;
                 log.Append(m->Name + ": " + std::to_string(m->GetCurrentHealth()) + "/" +
                            std::to_string(m->GetStatDict()->Get(Stat::Health)) + " HP", LType::Nerdy);
@@ -119,8 +117,9 @@ void Fight::ExecuteTurn(MonTuple mons) {
             log.Append(winner->Name + " wins!", LType::Major);
             return;
         }
-        if (turnIndex >= 100) {
-            log.Append("Draw — the fight timed out after 100 turns.", LType::Major);
+        if (turnIndex >= Config::Fight::maxTurnCount) {
+            log.Append("Draw — the fight timed out.", LType::Major);
+            EndFight();
             return;
         }
         if (!ActiveTeam()->AutoFight) return;
@@ -129,22 +128,22 @@ void Fight::ExecuteTurn(MonTuple mons) {
 }
 
 
-Fight::MonTuple Fight::AutoPickMons() const {
+Fight::TurnPair Fight::AutoPickMons() const {
     //Attacking Monster
     int ran = std::rand() % Config::Team::Size;
     Monster *attacker = nullptr;
     for (int i = 0; i < Config::Team::Size; i++) {
-        attacker = ActiveTeam()->Monsters[(ran + i) % Config::Team::Size];
+        attacker = ActiveTeam()->Monsters()[(ran + i) % Config::Team::Size].get();
         if (attacker && attacker->CheckIsAlive()) break;
     }
     if (!attacker || !attacker->CheckIsAlive()) return {nullptr, nullptr};
 
-    //Targeted Player
-    const PlayerSession *targetPlayer = nullptr;
+    //Targeted Team
+    const Team *targetPlayer = nullptr;
     if (!attacker->IsHealer()) {
-        ran = std::rand() % fightSize;
-        for (int i = 0; i < fightSize; i++) {
-            targetPlayer = players[(ran + i) % fightSize];
+        ran = std::rand() % FIGHT_SIZE;
+        for (int i = 0; i < FIGHT_SIZE; i++) {
+            targetPlayer = teams[(ran + i) % FIGHT_SIZE];
             if (targetPlayer && targetPlayer != ActiveTeam()) break;
         }
     } else targetPlayer = ActiveTeam();
@@ -154,7 +153,7 @@ Fight::MonTuple Fight::AutoPickMons() const {
     ran = std::rand() % Config::Team::Size;
     Monster *defender = nullptr;
     for (int i = 0; i < Config::Team::Size; i++) {
-        defender = targetPlayer->Monsters[(ran + i) % Config::Team::Size];
+        defender = targetPlayer->Monsters()[(ran + i) % Config::Team::Size].get();
         if (defender && defender->CheckIsAlive()) break;
     }
     if (!defender || !defender->CheckIsAlive()) return {nullptr, nullptr};
@@ -162,12 +161,28 @@ Fight::MonTuple Fight::AutoPickMons() const {
 }
 
 void Fight::UpdateWinner() {
-    PlayerSession *current = nullptr;
-    for (const auto p: players)
-        for (const auto m: p->Monsters) {
+    Team *current = nullptr;
+    for (const auto t: teams)
+        for (const auto &m: t->Monsters()) {
             if (!m || !m->CheckIsAlive()) continue;
-            if (current && current != p) return;
-            current = p;
+            if (current && current != t) return;
+            current = t;
         }
+    if (!current) return;
     winner = current;
+    EndFight();
 }
+
+void Fight::EndFight() const {
+    int expGain = 0;
+    for (const auto t: teams) {
+        if (t == winner)continue;
+        for (const auto &m: t->Monsters())
+            if (m) expGain += m->GetStatDict()->Get(Stat::Level);
+        t->ExitFight();
+    }
+    if (winner) winner->ExitFight(expGain);
+}
+
+
+#undef JStr

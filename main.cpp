@@ -17,7 +17,7 @@ int main(const int argc, const char *argv[]) {
         human->Attack(orc);
     }
     //std::cout << logger.AsStr();
-    std::cout << logger.AsJson().dump();
+    std::cout << logger.ToJson().dump();
     return 0;
 
     const DBManager dbm(argc > 1 ? argv[1] : "Default");

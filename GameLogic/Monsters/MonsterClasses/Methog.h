@@ -10,14 +10,17 @@ public:
 
 protected:
     bool ReceiveAttackImpl(Monster *from) override {
-        if (CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defence)) >
-            RandomPCT()) {
-            TryLog(Name + " has dodged.", LType::Major);
+        const int hitChance = static_cast<int>(
+            CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defence)));
+        TryLog(Name + " has a " + std::to_string(hitChance) + "% chance to dodge.", LType::Nerdy);
+        if (hitChance > RandomPCT()) {
+            TryLog(Name + " sidesteps the blow!", LType::Major);
             return false;
         }
-        TryLog(Name + " was hit.", LType::Major);
+        TryLog(Name + " is struck!", LType::Major);
         const int damage = from->GetStatDict()->Get(Stat::Damage);
         TakeDamage(damage);
+        TryLog(Name + " retaliates, dealing " + std::to_string(damage / 2) + " damage back!", LType::Major);
         from->TakeDamage(damage / 2);
         return true;
     }

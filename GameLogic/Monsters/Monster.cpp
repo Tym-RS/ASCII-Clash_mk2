@@ -11,6 +11,7 @@ Monster::Monster(std::string name, const int id, const MonsterType type)
 
 Monster::Monster(std::string name, const int id, const MonsterType type, StatDict stats)
     : ID(id), Name(std::move(name)), Type(type), stats(std::move(stats)) {
+    currentHealth = GetStatDict()->Get(Stat::Health);
 }
 
 void Monster::Reset() {
@@ -61,6 +62,10 @@ bool Monster::ReceiveAttack(Monster *from) {
 
 
 void Monster::AttackImpl(Monster *target) {
+    BaseReceiveAttack(target);
+}
+
+void Monster::BaseAttack(Monster *target) {
     TryLog(Name + " swings at " + target->Name + ".", LType::Major);
     target->ReceiveAttack(this);
 }
@@ -77,6 +82,10 @@ void Monster::HealImpl(const int amount) {
 }
 
 bool Monster::ReceiveAttackImpl(Monster *from) {
+    return BaseReceiveAttack(from);
+}
+
+bool Monster::BaseReceiveAttack(Monster *from) {
     const int hitChance = static_cast<int>(
         CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defence)));
     TryLog(Name + " has a " + std::to_string(hitChance) + "% chance to dodge.", LType::Nerdy);

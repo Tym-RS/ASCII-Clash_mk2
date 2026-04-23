@@ -44,6 +44,10 @@ namespace Config {
         constexpr int Size = 5;
     }
 
+    namespace Fight {
+        constexpr int maxTurnCount = 150;
+    }
+
     namespace Player {
         inline static std::regex usernameRegex("^[A-Za-z0-9_()\\-]{1,15}$");
         constexpr int TeamSize = 5;
