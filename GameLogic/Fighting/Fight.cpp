@@ -2,18 +2,24 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include "Database/TableDefs.h"
+#include "GameLogic/Monsters/Monsterbase.h"
+#include "GameLogic/Team.h"
 
 #define JStr(at) COL(Fights, at)
 
-Fight::Fight(const std::array<Team *, FIGHT_SIZE> teams)
-    : ID([&] {
-        std::size_t h = 0;
-        for (const auto p: teams)
-            h ^= (std::hash<std::string>{}(p->Name) << 1);
-        return std::to_string(h);
-    }()), teams(teams) {
-    for (const auto t: teams) t->EnterFight(&log);
-    turnIndex = std::rand() % FIGHT_SIZE;
+inline int GetHash(const std::vector<std::shared_ptr<Team> > &teams) {
+    std::size_t h = 0;
+    for (const auto &p: teams)
+        h ^= (std::hash<std::string>{}(p->Name) << 1);
+    h ^= time(nullptr);
+    return static_cast<int>(h);
+}
+
+
+Fight::Fight(const std::vector<std::shared_ptr<Team> > &teams)
+    : ID(GetHash(teams)), fightSize(teams.size()), teams(teams) {
+    for (const auto &t: teams) t->EnterFight(&log);
+    turnIndex = std::rand() % fightSize;
     log.Append(ActiveTeam()->Name + " starts!", LType::Major);
 }
 
@@ -25,7 +31,7 @@ nlohmann::json Fight::ToJson() const {
             {"ID", winner->ID}
         };
     auto participants = nlohmann::json::array();
-    for (const auto &t: teams) participants.push_back(t->ToJson());
+    for (const auto &t: teams) if (t) participants.push_back(t->ToJson());
 
     return {
         {JStr(ID), ID},
@@ -39,14 +45,14 @@ nlohmann::json Fight::ToJson() const {
 }
 
 
-Fight Fight::FromJson(const nlohmann::json &j, const std::array<Team *, FIGHT_SIZE> teams) {
+Fight Fight::FromJson(const nlohmann::json &j, const std::vector<std::shared_ptr<Team> > &teams) {
     auto fight = Fight(teams);
     fight.turnIndex = j.value("turn", 0);
     if (j.contains("winner") && !j["winner"].empty()) {
         const int winnerID = j["winner"]["ID"].get<int>();
-        for (const auto t: teams) {
+        for (const auto &t: teams) {
             if (t->ID != winnerID) continue;
-            fight.winner = t;
+            fight.winner = t.get();
             break;
         }
     }
@@ -66,10 +72,10 @@ bool Fight::TryTakeTurn(const Team *initiator, const int atkMonID, const int def
     }
     Monster *attacker = nullptr, *defender = nullptr;
 
-    for (const auto t: teams)
+    for (const auto &t: teams)
         for (auto &m: t->Monsters()) {
             if (!m || !m->CheckIsAlive()) continue;
-            if (m->ID == atkMonID && t == ActiveTeam())attacker = m.get();
+            if (m->ID == atkMonID && t.get() == ActiveTeam())attacker = m.get();
             if (m->ID == defMonID)defender = m.get();
         }
     if (!attacker || !defender) {
@@ -81,7 +87,7 @@ bool Fight::TryTakeTurn(const Team *initiator, const int atkMonID, const int def
 }
 
 Fight::~Fight() {
-    for (const auto t: teams) t->ExitFight();
+    for (const auto &t: teams) t->ExitFight();
 }
 
 
@@ -90,7 +96,7 @@ void Fight::ExecuteTurn(TurnPair mons) {
         log.Next(mons.attacker->Name + " attacks " + mons.defender->Name, LType::Major);
         mons.attacker->Attack(mons.defender);
 
-        for (const auto *team: teams) {
+        for (const auto &team: teams) {
             int alive = 0, total = 0, totalHP = 0, totalMaxHP = 0;
             for (auto &m: team->Monsters()) {
                 if (!m) continue;
@@ -141,9 +147,9 @@ Fight::TurnPair Fight::AutoPickMons() const {
     //Targeted Team
     const Team *targetPlayer = nullptr;
     if (!attacker->IsHealer()) {
-        ran = std::rand() % FIGHT_SIZE;
-        for (int i = 0; i < FIGHT_SIZE; i++) {
-            targetPlayer = teams[(ran + i) % FIGHT_SIZE];
+        ran = std::rand() % fightSize;
+        for (int i = 0; i < fightSize; i++) {
+            targetPlayer = teams[(ran + i) % fightSize].get();
             if (targetPlayer && targetPlayer != ActiveTeam()) break;
         }
     } else targetPlayer = ActiveTeam();
@@ -162,11 +168,11 @@ Fight::TurnPair Fight::AutoPickMons() const {
 
 void Fight::UpdateWinner() {
     Team *current = nullptr;
-    for (const auto t: teams)
+    for (const auto &t: teams)
         for (const auto &m: t->Monsters()) {
             if (!m || !m->CheckIsAlive()) continue;
-            if (current && current != t) return;
-            current = t;
+            if (current && current != t.get()) return;
+            current = t.get();
         }
     if (!current) return;
     winner = current;
@@ -175,8 +181,8 @@ void Fight::UpdateWinner() {
 
 void Fight::EndFight() const {
     int expGain = 0;
-    for (const auto t: teams) {
-        if (t == winner)continue;
+    for (const auto &t: teams) {
+        if (t.get() == winner)continue;
         for (const auto &m: t->Monsters())
             if (m) expGain += m->GetStatDict()->Get(Stat::Level);
         t->ExitFight();

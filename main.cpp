@@ -1,35 +1,20 @@
 #include <thread>
 #include <iostream>
-#include "Database/DBManager.h"
+
+#include "Database/SaveManager.h"
 #include "Server/GameServer.h"
 
 int main(const int argc, const char *argv[]) {
-    Monster *human = CreateMonster("Hans", 2, MonsterType::Human);
-    Monster *orc = CreateMonster("Morkgkg", 1, MonsterType::Orc);
-    NestedLogger logger = NestedLogger();
+    const SaveManager sm(argc > 1 ? argv[1] : "Default");
+    //GameServer server = GameServer();
 
-    human->LogPtr = &logger;
-    orc->LogPtr = &logger;
-
-    for (int i = 0; i < 10; i++) {
-        logger.Next("Round " + std::to_string(i));
-        orc->Attack(human);
-        human->Attack(orc);
-    }
-    //std::cout << logger.AsStr();
-    std::cout << logger.ToJson().dump();
-    return 0;
-
-    const DBManager dbm(argc > 1 ? argv[1] : "Default");
-    GameServer server = GameServer(dbm);
-
-    std::thread serverThread([&server] { server.Run(); });
+    //std::thread serverThread([&server] { server.Run(); });
 
     std::string cmd;
     while (std::cin >> cmd) {
         if (cmd == "stop") break;
     }
-    serverThread.join();
+    //serverThread.join();
     return 0;
 }
 

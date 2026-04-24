@@ -24,25 +24,4 @@ inline std::unique_ptr<Monster> CreateMonster(
 }
 
 
-inline nlohmann::json Monster::ToJson() const {
-    return nlohmann::json{
-        {"ID", ID},
-        {"name", Name},
-        {"type", MonsterDescriptions.at(Type).TypeAsString},
-        {"is_healer", IsHealer()},
-        {"current_health", currentHealth},
-        {"healing_done", healingDone},
-        {"stats", stats.ToJson()},
-    };
-}
-
-inline std::unique_ptr<Monster> Monster::FromJson(const nlohmann::json &j) {
-    const MonsterType type = MonsterTypeStringMap.at(j["type"].get<std::string>());
-    const auto stats = StatDict::FromJson(j["stats"]);
-    auto m = CreateMonster(j["name"].get<std::string>(), j["ID"].get<int>(), type, &stats);
-    m->currentHealth = j["current_health"].get<int>();
-    m->healingDone = j["healing_done"].get<int>();
-    return m;
-}
-
 #endif

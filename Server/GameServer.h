@@ -1,27 +1,22 @@
 #ifndef ASCII_CLASH_SERVERMANAGER_H
 #define ASCII_CLASH_SERVERMANAGER_H
-#include "PlayerSession.h"
-#include "../Database/DBManager.h"
+#include "MemoryManager.h"
 #include "../Imports/httplib.h"
+#include "Database/SaveManager.h"
 
 inline const std::string ServerMountPath = "Server/HTML";
 
+using namespace Database;
+
 class GameServer {
 public:
-    explicit GameServer(const DBManager &db);
+    explicit GameServer(MemoryManager *memoryManager);
 
     void Run();
 
 private:
-    const DBManager db;
+    MemoryManager mm;
     httplib::Server server;
-    std::map<std::string, PlayerSession *> playerSessions;
-
-    void StartSession(const std::string *usr, const std::string *pwd, httplib::Response &res);
-
-    PlayerSession *GetSession(const httplib::Request &req, httplib::Response &res);
-
-    void DeleteSession(const PlayerSession *session);
 };
 
 #endif

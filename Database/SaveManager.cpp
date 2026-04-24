@@ -1,5 +1,7 @@
 #include "SaveManager.h"
 
+#include "TableDefs.h"
+
 namespace Database {
     SaveManager::SaveManager(const std::string &dbName) {
         const std::string path = DBPaths + dbName + ".db";
@@ -67,12 +69,12 @@ namespace Database {
             result.push_back(row);
         }
         sqlite3_finalize(stmt);
-        if (result.empty() && err) *err = "No rows found in " + table;
+        if (result.empty())
+            SET_ERR("No rows found in " + table);
         return result;
     }
 
-    void SaveManager::SaveTo(const Table t, nlohmann::json j, std::string *err) const {
-        const std::string &table = TableStringMap.at(t);
+    void SaveManager::SaveTo(const std::string &table, nlohmann::json j, std::string *err) const {
         std::vector<std::string> keys;
         for (auto &[key, _]: j.items()) keys.push_back(key);
 
@@ -106,7 +108,18 @@ namespace Database {
 
         const int rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-        if (rc != SQLITE_DONE && err) *err = sqlite3_errmsg(db);
+        if (rc != SQLITE_DONE)
+            SET_ERR(sqlite3_errmsg(db));
+    }
+
+    int SaveManager::NextID(const std::string &table) const {
+        const std::string cmd = "SELECT COALESCE(MAX(id), 0) + 1 FROM " + table + ";";
+        sqlite3_stmt *stmt;
+        if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr) != SQLITE_OK) return 1;
+        int nextId = 1;
+        if (sqlite3_step(stmt) == SQLITE_ROW) nextId = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+        return nextId;
     }
 
     SaveManager::~SaveManager() {

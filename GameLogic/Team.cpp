@@ -1,8 +1,6 @@
 #include "Team.h"
-
 #include <utility>
 #include "Database/TableDefs.h"
-
 
 #define JStr(at) COL(Teams, at)
 
@@ -36,6 +34,7 @@ void Team::EnterFight(NestedLogger *l) {
 }
 
 void Team::ExitFight(const int expGain) {
+    if (!isInFight) return;
     const int expPerMon = expGain > 0 ? expGain / Config::Team::Size : 0;
     for (auto &m: monsters) {
         if (m && !m->CheckIsAlive()) m = nullptr;

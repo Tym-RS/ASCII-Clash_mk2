@@ -3,8 +3,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <nlohmann/json.hpp>
-
-#include "TableDefs.h"
+#include "ErrHelper.h"
 
 
 namespace Database {
@@ -14,13 +13,14 @@ namespace Database {
 
         std::vector<nlohmann::json> LoadWhere(
             const std::string &table,
-            const std::vector<std::pair<std::string, std::string> > &conditions,
+            const std::vector<std::pair<std::string, std::string> > &conditions = {},
             const std::string &orderBy = "",
             int limit = -1,
-            std::string *err = nullptr
-        ) const;
+            ERR_PARAM) const;
 
-        void SaveTo(Table t, nlohmann::json j, std::string *err = nullptr) const;
+        void SaveTo(const std::string &table, nlohmann::json j, ERR_PARAM) const;
+
+        int NextID(const std::string &table) const;
 
         ~SaveManager();
 

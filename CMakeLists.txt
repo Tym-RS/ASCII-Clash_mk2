@@ -12,12 +12,10 @@ add_executable(ASCII_Clash main.cpp
         GameLogic/Fighting/Log/NestedLogger.h
         GameLogic/Monsters/Stats/Stats.h
         GameLogic/Fighting/Fight.h
-        Database/DBManager.cpp
-        Database/DBManager.h
-        Server/GameServer.cpp
+        Server/DEPRGameServer.cpp
         Server/GameServer.h
-        Server/PlayerSession.h
-        Server/PlayerSession.cpp
+        Server/PlayerSession/PlayerSession.h
+        Server/PlayerSession/PlayerSession.cpp
         GameLogic/Monsters/Descriptions.h
         Server/ServerHelpers.h
         GameLogic/Monsters/Stats/StatDict.h
@@ -36,5 +34,9 @@ add_executable(ASCII_Clash main.cpp
         Database/TableDefs.h
         GameLogic/Team.cpp
         GameLogic/Team.h
+        Server/GameServer.cpp
+        Server/MemoryManager.cpp
+        Server/MemoryManager.h
+        ErrHelper.h
 )
 target_link_libraries(ASCII_Clash SQLite::SQLite3)

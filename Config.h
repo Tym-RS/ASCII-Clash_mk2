@@ -1,6 +1,6 @@
 #ifndef ASCII_CLASH_CONFIG_H
 #define ASCII_CLASH_CONFIG_H
-
+#include <regex>
 
 #define MONSTER_STATS \
 X(Damage,  "How much damage each hit from this monster deals.", 1, 1) \
@@ -23,8 +23,6 @@ X(Major) \
 X(Minor) \
 X(Nerdy)
 
-
-#include <regex>
 
 namespace Config {
     namespace Monster {
@@ -49,8 +47,8 @@ namespace Config {
     }
 
     namespace Player {
-        inline static std::regex usernameRegex("^[A-Za-z0-9_()\\-]{1,15}$");
-        constexpr int TeamSize = 5;
+        inline static std::regex usernameRegex("^[A-Za-z0-9_()\\-]{1,15}$"), passwordRegex("");
+        constexpr int TeamAmount = 5;
     }
 
     namespace Server {

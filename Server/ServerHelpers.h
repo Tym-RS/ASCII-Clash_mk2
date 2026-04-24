@@ -19,11 +19,5 @@ inline std::optional<std::string> GetCookie(const std::string &key, const httpli
     return std::nullopt;
 }
 
-inline std::string RandomID() {
-    std::random_device rd;
-    std::uniform_int_distribution<uint64_t> dist;
-    std::stringstream stream;
-    for (int i = 0; i < 4; ++i) stream << std::hex << dist(rd);
-    return stream.str();
-}
+
 #endif // SERVERHELPERS_H
