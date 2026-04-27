@@ -1,7 +1,7 @@
 #ifndef ASCII_CLASH_METHOG_H
 #define ASCII_CLASH_METHOG_H
 
-#include "../Monsterbase.h"
+#include "../MonsterBase.h"
 #include "../../MathHelpers.h"
 
 class Methog final : public TypedMonster<MonsterType::Methog> {

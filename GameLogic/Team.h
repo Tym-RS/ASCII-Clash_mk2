@@ -2,7 +2,7 @@
 #define ASCII_CLASH_TEAM_H
 #include "Config.h"
 #include "Fighting/Fight.h"
-#include "Monsters/Monsterbase.h"
+#include "Monsters/MonsterBase.h"
 
 
 class Team final : public JsonSavable {
@@ -19,6 +19,8 @@ public:
     [[nodiscard]] nlohmann::json ToJson() const override;
 
     [[nodiscard]] bool IsInFight() const { return isInFight; }
+
+    int TryGetNewMonsterID(const std::string &name, MonsterType type, ERR_PARAM);
 
     void EnterFight(NestedLogger *l);
 

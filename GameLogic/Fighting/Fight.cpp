@@ -2,7 +2,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include "Database/TableDefs.h"
-#include "GameLogic/Monsters/Monsterbase.h"
+#include "GameLogic/Monsters/MonsterBase.h"
 #include "GameLogic/Team.h"
 
 #define JStr(at) COL(Fights, at)

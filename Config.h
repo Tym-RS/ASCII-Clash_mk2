@@ -47,7 +47,8 @@ namespace Config {
     }
 
     namespace Player {
-        inline static std::regex usernameRegex("^[A-Za-z0-9_()\\-]{1,15}$"), passwordRegex("");
+        inline static std::regex usernameRegex(R"(^[A-Za-z0-9_()\-:;\[\]{}]{1,15}$)");
+        inline static std::regex passwordRegex(R"(^(?=.{5,})(?=.*[^A-Za-z0-9]).*$)");
         constexpr int TeamAmount = 5;
     }
 

@@ -1,7 +1,7 @@
 #ifndef ASCII_CLASH_ORC_H
 #define ASCII_CLASH_ORC_H
 
-#include "../Monsterbase.h"
+#include "../MonsterBase.h"
 #include "../../MathHelpers.h"
 
 class Orc final : public TypedMonster<MonsterType::Orc> {

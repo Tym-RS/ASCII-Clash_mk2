@@ -1,7 +1,7 @@
 #ifndef ASCII_CLASH_HUMAN_H
 #define ASCII_CLASH_HUMAN_H
 
-#include "../Monsterbase.h"
+#include "../MonsterBase.h"
 #include "../../MathHelpers.h"
 
 class Human final : public TypedMonster<MonsterType::Human> {

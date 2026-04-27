@@ -2,7 +2,7 @@
 #include <utility>
 
 #include "CreateMonster.h"
-#include "GameLogic/Monsters/Monsterbase.h"
+#include "GameLogic/Monsters/MonsterBase.h"
 #include "../MathHelpers.h"
 
 Monster::Monster(std::string name, const int id, const MonsterType type)

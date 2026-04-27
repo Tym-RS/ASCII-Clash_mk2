@@ -2,19 +2,18 @@
 #include <iostream>
 
 #include "Database/SaveManager.h"
-#include "Server/GameServer.h"
+#include "Server/GameServer/GameServer.h"
 
 int main(const int argc, const char *argv[]) {
-    const SaveManager sm(argc > 1 ? argv[1] : "Default");
-    //GameServer server = GameServer();
+    srand(time(nullptr));
+    SaveManager sm(argc > 1 ? argv[1] : "Default");
+    GameServer server = GameServer(&sm);
 
-    //std::thread serverThread([&server] { server.Run(); });
+    std::thread serverThread([&server] { server.Run(); });
 
     std::string cmd;
-    while (std::cin >> cmd) {
-        if (cmd == "stop") break;
-    }
-    //serverThread.join();
+    while (std::cin >> cmd) if (cmd == "stop") break;
+    serverThread.join();
     return 0;
 }
 

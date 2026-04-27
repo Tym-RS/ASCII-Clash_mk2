@@ -1,6 +1,7 @@
 #include "Team.h"
 #include <utility>
 #include "Database/TableDefs.h"
+#include "Monsters/CreateMonster.h"
 
 #define JStr(at) COL(Teams, at)
 
@@ -25,6 +26,25 @@ nlohmann::json Team::ToJson() const {
         {JStr(name), Name},
         {JStr(monsters), mons},
     };
+}
+
+int Team::TryGetNewMonsterID(const std::string &name, const MonsterType type, std::string *err) {
+    int emptySlot = -1;
+    for (int i = 0; i < Config::Team::Size; i++) {
+        const auto m = monsters[i].get();
+        if (!m && emptySlot == -1) emptySlot = i;
+        if (m && m->Name != name) continue;
+        SET_ERR("A monster with the same name already exists.");
+        return -1;
+    }
+    if (emptySlot == -1) {
+        SET_ERR("No empty slots in team.");
+        return -1;
+    }
+    auto mon = CreateMonster(name, ID * Config::Team::Size + emptySlot, type);
+    const int id = mon->ID;
+    monsters[emptySlot] = std::move(mon);
+    return id;
 }
 
 void Team::EnterFight(NestedLogger *l) {

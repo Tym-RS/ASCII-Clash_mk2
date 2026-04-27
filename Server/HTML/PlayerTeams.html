@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII Clash — Teams</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* ── Team cards ── */
+    .team-card {
+      border: 2px solid var(--dim);
+      padding: 0.85rem;
+      margin-bottom: 0.6rem;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.4);
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .team-card:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 12px rgba(0, 255, 65, 0.12);
+      background: rgba(0, 122, 31, 0.05);
+    }
+
+    .team-card:active { transform: translate(2px, 2px); }
+
+    .team-card.empty {
+      border: 2px dashed rgba(0, 122, 31, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 64px;
+      opacity: 0.55;
+    }
+
+    .team-card.empty:hover {
+      opacity: 1;
+      border-color: var(--green);
+      border-style: dashed;
+    }
+
+    .empty-slot-text {
+      font-size: 0.5rem;
+      color: var(--dim);
+    }
+
+    .team-name {
+      font-size: 0.65rem;
+      color: var(--green);
+      margin-bottom: 0.6rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Monster slots inside a team card ── */
+    .mon-slots {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .mon-slot {
+      border: 1px solid rgba(0, 122, 31, 0.3);
+      background: #000;
+      padding: 0.3rem 0.4rem;
+      min-width: 48px;
+      text-align: center;
+    }
+
+    .mon-slot.empty-mon {
+      opacity: 0.3;
+      border-style: dashed;
+    }
+
+    .mon-slot-type {
+      font-size: 0.38rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 56px;
+    }
+
+    .mon-slot-lv {
+      font-size: 0.45rem;
+      color: var(--text);
+    }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--panel);
+      border: 2px solid var(--green);
+      padding: 1.75rem 1.5rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow:
+              4px 4px 0 var(--dim),
+              0 0 30px rgba(0, 255, 65, 0.12);
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 0.75rem;
+      color: var(--green);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .modal-actions .btn-primary {
+      flex: 1;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      background: transparent;
+      color: var(--dim);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
+      border: 1px solid var(--dim);
+      padding: 0.9rem 1rem;
+      cursor: pointer;
+      min-height: 48px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-cancel:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="/home.html" class="nav-back">◀ BACK</a>
+  <h1>Your Teams</h1>
+
+  <div id="teamList" class="loading">loading...</div>
+</div>
+
+<!-- Create team modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-title">New Team</div>
+    <div class="msg-error" id="modalErr"></div>
+    <div class="field">
+      <label for="teamName">Name</label>
+      <input type="text" id="teamName" name="teamName"
+             spellcheck="false" maxlength="32" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="btnCreate">[ CREATE ]</button>
+      <button class="btn-cancel" id="btnCancel">[ CANCEL ]</button>
+    </div>
+  </div>
+</div>
+
+<script src="/utils.js"></script>
+<script>
+  const modal    = document.getElementById('modal');
+  const modalErr = document.getElementById('modalErr');
+  const btnCreate = document.getElementById('btnCreate');
+  const btnCancel = document.getElementById('btnCancel');
+  const teamNameInput = document.getElementById('teamName');
+
+  let teams = [];
+
+  // ── Load & render ─────────────────────────────────────
+  async function load() {
+    const res = await post('/ViewMe');
+    if (!res || !res.ok) { window.location.href = '/index.html'; return; }
+    const data = await res.json();
+    teams = data.Teams;
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('teamList');
+    list.className = '';
+    list.innerHTML = '';
+
+    teams.forEach((team, i) => {
+      const card = document.createElement('div');
+
+      if (!team) {
+        card.className = 'team-card empty';
+        card.innerHTML = '<span class="empty-slot-text">[ + new team ]</span>';
+        card.addEventListener('click', openModal);
+      } else {
+        card.className = 'team-card';
+
+        const slotsHtml = team.Monsters.map(m => {
+          if (!m) return `
+              <div class="mon-slot empty-mon">
+                <div class="mon-slot-type">----</div>
+                <div class="mon-slot-lv">--</div>
+              </div>`;
+          return `
+              <div class="mon-slot">
+                <div class="mon-slot-type">${m.Type}</div>
+                <div class="mon-slot-lv">LV.${m.Level}</div>
+              </div>`;
+        }).join('');
+
+        card.innerHTML = `
+            <div class="team-name">${team.Name}</div>
+            <div class="mon-slots">${slotsHtml}</div>
+          `;
+        card.addEventListener('click', () => {
+          location.href = '/ViewTeam.html?id=' + team.ID;
+        });
+      }
+
+      list.appendChild(card);
+    });
+  }
+
+  // ── Modal ─────────────────────────────────────────────
+  function openModal() {
+    teamNameInput.value = '';
+    hideMsg(modalErr);
+    btnCreate.disabled = false;
+    modal.classList.add('open');
+    setTimeout(() => teamNameInput.focus(), 50);
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+  }
+
+  btnCancel.addEventListener('click', closeModal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  btnCreate.addEventListener('click', async () => {
+    hideMsg(modalErr);
+    const name = teamNameInput.value.trim();
+    if (!name) { showError(modalErr, 'Please enter a name'); return; }
+
+    btnCreate.disabled = true;
+    const res = await postForm('/CreateTeam', { Name: name });
+    if (!res) { btnCreate.disabled = false; return; }
+
+    if (res.ok) {
+      closeModal();
+      await load();
+    } else {
+      const msg = await res.text();
+      showError(modalErr, msg || 'Failed to create team');
+      btnCreate.disabled = false;
+    }
+  });
+
+  // Allow Enter key inside the name input
+  teamNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btnCreate.click();
+  });
+
+  load();
+</script>
+</body>
+</html>

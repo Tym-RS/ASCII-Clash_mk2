@@ -5,54 +5,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ASCII Clash</title>
   <link rel="stylesheet" href="/style.css">
+  <style>
+    .logo-block {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 2px solid var(--dim);
+    }
+
+    .logo-block h1 {
+      font-size: 1.1rem;
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0.4rem;
+    }
+
+    .logo-block h1::after { content: none; }
+
+    .logo-tagline {
+      font-size: 0.38rem;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      animation: blink 1.4s step-end infinite;
+    }
+
+    .register-block {
+      margin-top: 1rem;
+      border: 1px solid var(--dim);
+      padding: 0.9rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: rgba(0, 122, 31, 0.04);
+    }
+
+    .register-block span {
+      font-size: 0.42rem;
+      color: var(--text);
+      opacity: 0.7;
+      line-height: 1.9;
+    }
+
+    .register-block a {
+      font-size: 0.55rem;
+      color: var(--green);
+      min-height: unset;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+      border: 1px solid var(--green);
+      padding: 0.5rem 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .register-block a:hover {
+      background: rgba(0, 255, 65, 0.08);
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
+<div class="container">
+
+  <div class="logo-block">
     <h1>ASCII Clash</h1>
-
-    <div class="msg-error" id="err"></div>
-
-    <form id="loginForm">
-      <div class="field">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username"
-               autocomplete="username" spellcheck="false" required>
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password"
-               autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="btn-primary">[ LOGIN ]</button>
-    </form>
-
-    <hr class="sep">
-    <a href="/register.html">▶ New player? Register here</a>
+    <div class="logo-tagline">▶ INSERT COIN TO PLAY ◀</div>
   </div>
 
-  <script src="/utils.js"></script>
-  <script>
-    const form = document.getElementById('loginForm');
-    const err  = document.getElementById('err');
+  <div class="msg-error" id="err"></div>
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      hideMsg(err);
+  <form id="loginForm">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username"
+             autocomplete="username" spellcheck="false" required>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password"
+             autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn-primary">[ LOGIN ]</button>
+  </form>
 
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
+  <div class="register-block">
+    <span>New player?</span>
+    <a href="/register.html">▶ REGISTER HERE</a>
+  </div>
 
-      const res = await postForm('/login', { username, password });
-      if (!res) return;
+</div>
 
-      if (res.ok) {
-        window.location.href = '/home.html';
-      } else {
-        const msg = await res.text();
-        showError(err, msg || 'Login failed');
-        shake(form);
-      }
-    });
-  </script>
+<script src="/utils.js"></script>
+<script>
+  const form = document.getElementById('loginForm');
+  const err  = document.getElementById('err');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMsg(err);
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    const res = await postForm('/Login', { username, password });
+    if (!res) return;
+
+    if (res.ok) {
+      window.location.href = '/home.html';
+    } else {
+      const msg = await res.text();
+      showError(err, msg || 'Login failed');
+      shake(form);
+    }
+  });
+</script>
 </body>
 </html>

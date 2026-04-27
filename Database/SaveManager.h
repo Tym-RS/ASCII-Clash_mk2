@@ -18,9 +18,9 @@ namespace Database {
             int limit = -1,
             ERR_PARAM) const;
 
-        void SaveTo(const std::string &table, nlohmann::json j, ERR_PARAM) const;
+        bool TrySaveTo(const std::string &table, nlohmann::json j, ERR_PARAM) const;
 
-        int NextID(const std::string &table) const;
+        [[nodiscard]] int NextID(const std::string &table) const;
 
         ~SaveManager();
 

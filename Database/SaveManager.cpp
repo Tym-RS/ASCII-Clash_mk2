@@ -74,7 +74,7 @@ namespace Database {
         return result;
     }
 
-    void SaveManager::SaveTo(const std::string &table, nlohmann::json j, std::string *err) const {
+    bool SaveManager::TrySaveTo(const std::string &table, nlohmann::json j, std::string *err) const {
         std::vector<std::string> keys;
         for (auto &[key, _]: j.items()) keys.push_back(key);
 
@@ -110,6 +110,7 @@ namespace Database {
         sqlite3_finalize(stmt);
         if (rc != SQLITE_DONE)
             SET_ERR(sqlite3_errmsg(db));
+        return rc == SQLITE_DONE;
     }
 
     int SaveManager::NextID(const std::string &table) const {

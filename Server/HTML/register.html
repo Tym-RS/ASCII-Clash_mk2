@@ -7,69 +7,86 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>New Player</h1>
+<div class="container">
+  <h1>New Player</h1>
 
-    <div class="msg-error" id="err"></div>
+  <div class="msg-error" id="err"></div>
 
-    <form id="regForm">
-      <div class="field">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username"
-               autocomplete="username" spellcheck="false" required>
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password"
-               autocomplete="new-password" required>
-      </div>
-      <div class="field">
-        <label for="confirm">Confirm Password</label>
-        <input type="password" id="confirm" name="confirm"
-               autocomplete="new-password" required>
-      </div>
-      <button type="submit" class="btn-primary">[ REGISTER ]</button>
-    </form>
-
-    <hr class="sep">
-    <a href="/index.html">◀ Back to Login</a>
-
-    <div class="msg-info">
-      ⚠ This is a small test project — NOT secure.<br>
-      Do NOT provide ANY sensitive data.
+  <form id="regForm">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username"
+             autocomplete="username" spellcheck="false" required>
     </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password"
+             autocomplete="new-password" required>
+    </div>
+    <div class="field">
+      <label for="confirm">Confirm Password</label>
+      <input type="password" id="confirm" name="confirm"
+             autocomplete="new-password" required>
+    </div>
+    <button type="submit" class="btn-primary" id="btnRegister">[ REGISTER ]</button>
+  </form>
+
+  <hr class="sep">
+  <a href="/index.html">◀ Back to Login</a>
+
+  <div class="msg-info">
+    !! This is a small test project — NOT secure.<br>
+    Do NOT use real or sensitive data.
   </div>
+</div>
 
-  <script src="/utils.js"></script>
-  <script>
-    const form = document.getElementById('regForm');
-    const err  = document.getElementById('err');
+<script src="/utils.js"></script>
+<script>
+  const form = document.getElementById('regForm');
+  const err  = document.getElementById('err');
+  const btn  = document.getElementById('btnRegister');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      hideMsg(err);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMsg(err);
 
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-      const confirm  = document.getElementById('confirm').value;
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm').value;
 
-      if (password !== confirm) {
-        showError(err, 'Passwords do not match');
-        shake(form);
-        return;
-      }
+    if (password !== confirm) {
+      showError(err, 'Passwords do not match');
+      shake(form);
+      return;
+    }
 
-      const res = await postForm('/register', { username, password });
-      if (!res) return;
+    btn.disabled = true;
 
-      if (res.ok) {
-        window.location.href = '/home.html';
-      } else {
-        const msg = await res.text();
-        showError(err, msg || 'Registration failed');
-        shake(form);
-      }
-    });
-  </script>
+    // Step 1: Register
+    const regRes = await postForm('/Register', { username, password });
+    if (!regRes) { btn.disabled = false; return; }
+
+    if (!regRes.ok) {
+      const msg = await regRes.text();
+      showError(err, msg || 'Registration failed');
+      shake(form);
+      btn.disabled = false;
+      return;
+    }
+
+    // Step 2: Login immediately after successful register
+    const loginRes = await postForm('/Login', { username, password });
+    if (!loginRes) { btn.disabled = false; return; }
+
+    if (loginRes.ok) {
+      window.location.href = '/home.html';
+    } else {
+      const msg = await loginRes.text();
+      showError(err, msg || 'Registered but login failed — please log in manually');
+      shake(form);
+      btn.disabled = false;
+    }
+  });
+</script>
 </body>
 </html>

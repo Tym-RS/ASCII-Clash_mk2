@@ -1,8 +1,7 @@
-#include "PlayerSession.h"
-
-#include <random>
-#include <utility>
 #include "Database/TableDefs.h"
+#include "PlayerSession.h"
+#include <utility>
+#include <random>
 
 #define JStr(at) COL(Players, at)
 
@@ -15,8 +14,8 @@ inline std::string RandomID() {
 }
 
 PlayerSession::PlayerSession(const int id, std::string username, const int password) : PlayerID(id),
-    Username(std::move(username)),
-    password(password), SessionID(RandomID()) {
+    SessionID(RandomID()),
+    Username(std::move(username)), password(password) {
     lastActivity = time(nullptr);
 }
 
@@ -26,7 +25,7 @@ nlohmann::json PlayerSession::ToJson() const {
     return {
         {JStr(ID), PlayerID},
         {JStr(teams), teamIDs},
-        {JStr(score), Score},
+        {JStr(score), GetScore()},
         {JStr(password), password},
         {JStr(username), Username},
     };
@@ -38,7 +37,6 @@ PlayerSession PlayerSession::FromJson(nlohmann::json j,
     const std::string username = j.at(JStr(username)).get<std::string>();
     const int password = j.at(JStr(password)).get<int>();
     auto player = PlayerSession(id, username, password);
-    player.Score = j.at(JStr(score)).get<int>();
     player.teams = std::move(teams);
     return player;
 }
@@ -49,73 +47,47 @@ bool PlayerSession::CheckActive() {
     return true;
 }
 
-#undef JStr
+Monster *PlayerSession::TryGetMonster(const int id) const {
+    for (const auto &t: teams)
+        for (const auto &m: t->Monsters())
+            if (m && m->ID == id) return m.get();
+    return nullptr;
+}
 
-//TODO
-// #include <ctime>
-// #include <utility>
-// #include "Server/ServerHelpers.h"
-// using json = nlohmann::json;
-//
-// PlayerSession::PlayerSession(const int playerID, std::string username) : PlayerID(playerID),
-//                                                                          SessionID(RandomID()),
-//                                                                          Username(std::move(username)), Monsters() {
-//     lastActivity = time(nullptr);
-// }
-//
-//
-// bool PlayerSession::IsActive() const {
-//     return lastActivity + Config::Server::SessionTimeout > time(nullptr);
-// }
-//
-// void PlayerSession::UpdateLastActivity() {
-//     lastActivity = time(nullptr);
-// }
-//
-// json PlayerSession::GetMonsterJson(const int monsterID) const {
-//     json arr = json::array();
-//     for (Monster *monster: Monsters) {
-//         if (monsterID != -1 && (!monster || monster->ID != monsterID)) continue;
-//         if (monster)
-//             arr.push_back({
-//                 monster->ToJson()
-//             });
-//         else arr.push_back(nullptr);
-//     }
-//     return arr;
-// }
-//
-// bool PlayerSession::TryLevelMonster(const int id, nlohmann::json data, std::string *err = nullptr) const {
-//     Monster *mon = GetMonsterByID(id);
-//     if (!mon) {
-//         if (err) *err = "Monster not found.";
-//         return false;
-//     }
-//     int totalSP = 0;
-//     for (const auto &[key, value]: data.items())
-//         totalSP += value.get<int>();
-//     if (totalSP > mon->GetStatDict()->Get(Stat::SkillPoints)) {
-//         if (err) *err = "Not enough skill-points.";
-//         return false;
-//     }
-//
-//     for (const auto &[stat, lvlAmount]: data.items()) {
-//         if (!StatStringMap.contains(stat)) {
-//             if (err) *err = "Stat [" + stat + "] not found. SP's only partially applied.";
-//             return false;
-//         }
-//         for (int i = 0; i < lvlAmount.get<int>(); i++)
-//             if (!mon->GetStatDict()->TryLevel(StatStringMap.at(stat), err)) return false;
-//     }
-//
-//     return true;
-// }
-//
-// PlayerSession::~PlayerSession() {
-//     for (const Monster *monster: Monsters) delete monster;
-// }
-//
-// Monster *PlayerSession::GetMonsterByID(const int id) const {
-//     for (Monster *m: Monsters) if (m && m->ID == id) return m;
-//     return nullptr;
-// }
+int PlayerSession::GetScore() const {
+    int score = 0;
+    for (const auto t: teams)
+        if (t)
+            for (const auto &m: t->Monsters())
+                if (m) score += m->GetStatDict()->Get(Stat::Level);
+    return score;
+}
+
+std::shared_ptr<Team> PlayerSession::TryGetCreateNewTeam(std::string name, std::string *err) {
+    int nextFree = 0;
+    for (; nextFree < teams.size(); nextFree++)
+        if (!teams[nextFree]) break;
+
+    if (nextFree == teams.size()) {
+        SET_ERR("No free team slot.");
+        return nullptr;
+    }
+    teams[nextFree] = std::make_shared<Team>(name, PlayerID * Config::Player::TeamAmount + nextFree);
+    return teams[nextFree];
+}
+
+bool PlayerSession::TryDeleteTeam(const int id, std::string *err) {
+    for (int i = 0; i < teams.size(); i++) {
+        if (!teams[i] || teams[i]->ID != id) continue;
+        if (teams[i]->IsInFight()) {
+            SET_ERR("Team is currently in a fight.");
+            return false;
+        }
+        teams[i] = nullptr;
+        return true;
+    }
+    SET_ERR("Team not found.");
+    return false;
+}
+
+#undef JStr

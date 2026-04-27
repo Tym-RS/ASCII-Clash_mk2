@@ -5,7 +5,7 @@
 #include "MonsterClasses/Orc.h"
 #include "MonsterClasses/Methog.h"
 #include "MonsterClasses/Ratkin.h"
-#include "Monsterbase.h"
+#include "MonsterBase.h"
 #include "Config.h"
 
 
@@ -18,8 +18,8 @@ inline std::unique_ptr<Monster> CreateMonster(
 #undef X
         default:
             return stats
-                       ? std::make_unique<Monster>(name, id, MonsterType::None, *stats)
-                       : std::make_unique<Monster>(name, id, MonsterType::None);
+                       ? std::make_unique<Monster>(name, id, MonsterType::COUNT, *stats)
+                       : std::make_unique<Monster>(name, id, MonsterType::COUNT);
     }
 }
 

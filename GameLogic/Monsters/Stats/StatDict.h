@@ -5,6 +5,8 @@
 #include <string>
 #include <array>
 
+#include "ErrHelper.h"
+
 class StatDict final : public JsonSavable {
 public:
     StatDict() = default;
@@ -17,7 +19,7 @@ public:
 
     [[nodiscard]] int Get(Stat stat) const;
 
-    bool TryLevel(Stat toLevel, std::string *err = nullptr);
+    bool TryLevel(Stat toLevel, ERR_PARAM);
 
 private:
     explicit StatDict(const std::array<int, static_cast<int>(Stat::COUNT)> &initValues);
