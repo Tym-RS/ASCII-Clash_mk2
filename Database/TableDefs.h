@@ -11,8 +11,8 @@ namespace Database {
 #define TABLES          X(Teams) X(Players) X(Fights) X(FightTeams) //X(Monsters)
 
 #define Players_COLS    Y(ID, "INTEGER PRIMARY KEY") Y(username, "TEXT UNIQUE NOT NULL") Y(password, "INTEGER NOT NULL") Y(score, "INTEGER DEFAULT 0") Y(teams, "TEXT")
-#define Teams_COLS      Y(ID, "INTEGER PRIMARY KEY") Y(name, "TEXT NOT NULL UNIQUE") Y(monsters, "TEXT")
-#define Fights_COLS     Y(ID, "INTEGER PRIMARY KEY") Y(is_ongoing, "BOOLEAN DEFAULT TRUE") Y(winner, "TEXT") \
+#define Teams_COLS      Y(ID, "INTEGER PRIMARY KEY") Y(name, "TEXT NOT NULL UNIQUE") Y(monsters, "TEXT") Y(in_fight, "BOOLEAN DEFAULT FALSE NOT NULL")
+#define Fights_COLS     Y(ID, "INTEGER PRIMARY KEY") Y(is_ongoing, "BOOLEAN DEFAULT TRUE NOT NULL") Y(winner, "TEXT") \
     Y(active_team, "TEXT") Y(turn, "INTEGER DEFAULT 0 NOT NULL") Y(log, "TEXT") Y(participants, "TEXT NOT NULL")
 #define FightTeams_COLS Y(fight_ID,"INTEGER NOT NULL") Y(team_ID,"INTEGER NOT NULL")
 

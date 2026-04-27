@@ -37,6 +37,7 @@ void GameServer::Leaderboard(const Request &req, Response &res) {
 }
 
 void GameServer::GameInfo(const Request &req, Response &res) {
+    RETURN_RES(GetGameDescriptionsJSON().dump(), 200);
 }
 
 void GameServer::Login(const Request &req, Response &res) {
@@ -134,6 +135,13 @@ void GameServer::DeleteTeam(const Request &req, Response &res) {
 }
 
 void GameServer::ViewTeam(const Request &req, Response &res) {
+    REQUIRE_PARAMS("ID")
+    const int id = std::stoi(req.get_param_value("ID"));
+    std::string err;
+    SESSION_ID
+    const auto team = memory.TryGetTeam(id, &err);
+    if (!team) RETURN_RES(err, 400);
+    RETURN_RES(team->ToJson().dump(), 200);
 }
 
 void GameServer::CreateMonster(const Request &req, Response &res) {

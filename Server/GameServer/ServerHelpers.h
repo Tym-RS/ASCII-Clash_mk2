@@ -6,10 +6,16 @@
     for (const std::string _p : {__VA_ARGS__}) {                \
         if (req.has_param(_p))  continue;                       \
         res.status = 400;                                       \
-        res.set_content(_p + " was NOT found.", "text/plain");  \
+        res.set_content("Param [ " + _p + " ] was NOT found.", "text/plain");  \
         return;                                                 \
         }
-
+#define REQUIRE_HEADERS(...)                                    \
+    for (const std::string _p : {__VA_ARGS__}) {                \
+        if (req.has_header(_p))  continue;                      \
+        res.status = 400;                                       \
+        res.set_content("Header [ " + _p + " ] was NOT found.", "text/plain");  \
+        return;                                                 \
+        }
 
 #define RETURN_RES(text, code) {res.status = code; res.set_content(text, "text/plain"); return;}
 
