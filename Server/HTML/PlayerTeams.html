@@ -217,7 +217,7 @@
             } else {
                 card.className = 'team-card';
 
-                const slotsHtml = team.Monsters.map(m => {
+                const slotsHtml = team.monsters.map(m => {
                     if (!m) return `
               <div class="mon-slot empty-mon">
                 <div class="mon-slot-type">----</div>
@@ -231,7 +231,7 @@
                 }).join('');
 
                 card.innerHTML = `
-            <div class="team-name">${team.Name}</div>
+            <div class="team-name">${team.name}</div>
             <div class="mon-slots">${slotsHtml}</div>
           `;
                 card.addEventListener('click', () => {

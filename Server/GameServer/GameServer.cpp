@@ -106,7 +106,7 @@ void GameServer::ViewMe(const Request &req, Response &res) {
             {COL(Teams, name), t->Name},
             {COL(Teams, ID), t->ID},
             {COL(Teams, fight_id), t->CurrentFightID()},
-            {COL(Teams, in_fight), t->IsInFight()},
+            {"in_fight", t->IsInFight()},
             {COL(Teams, monsters), monJ},
         });
     }
@@ -167,7 +167,7 @@ void GameServer::SetAutoFight(const Request &req, Response &res) {
     const int id = std::stoi(req.get_param_value("team_ID"));
     const auto team = player->TryGetTeam(id, &err);
     if (!team) RETURN_RES(err, 404)
-    team->AutoFight = std::stoi(req.get_param_value("auto_fight")) == 1; //TODO Implement in HTML
+    team->AutoFight = std::stoi(req.get_param_value("set_to")) == 1;
     res.status = 204;
 }
 
@@ -245,7 +245,7 @@ void GameServer::ViewMonster(const Request &req, Response &res) {
     std::string err;
     const auto player = memory->TryGetPlayer(sessionID, &err);
     if (!player) RETURN_RES(err, 404);
-    const auto team = player->TryGetTeam(std::stoi(req.get_param_value("team_ID")), &err);
+    const auto team = memory->TryGetTeam(std::stoi(req.get_param_value("team_ID")), &err);
     if (!team) RETURN_RES(err, 404);
     const auto mon = team->TryGetMonster(std::stoi(req.get_param_value("monster_ID")), &err);
     if (!mon) RETURN_RES(err, 404);

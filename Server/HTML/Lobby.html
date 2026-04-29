@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII Clash — Lobby</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .lobby-status {
+      border: 2px solid var(--dim);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.85rem 1rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .lobby-status-text {
+      font-size: 0.5rem;
+      color: var(--dim);
+      margin-bottom: 0.75rem;
+      animation: blink 1.2s step-end infinite;
+    }
+
+    .lobby-status-text.active { color: var(--green); }
+
+    .request-card {
+      border: 1px solid var(--dim);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .request-card:hover {
+      border-color: var(--green);
+      background: rgba(0, 122, 31, 0.06);
+    }
+
+    .request-card:active { transform: translate(2px, 2px); }
+
+    .request-info { min-width: 0; }
+
+    .request-name {
+      font-size: 0.55rem;
+      color: var(--green);
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .request-level {
+      font-size: 0.4rem;
+      color: var(--dim);
+    }
+
+    .request-action {
+      font-size: 0.42rem;
+      color: var(--dim);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .section-title {
+      font-size: 0.45rem;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(0, 122, 31, 0.25);
+    }
+
+    .empty-list {
+      text-align: center;
+      font-size: 0.45rem;
+      color: var(--dim);
+      padding: 1rem 0;
+    }
+
+    .btn-cancel {
+      width: 100%;
+      background: transparent;
+      color: rgba(0, 122, 31, 0.45);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      border: 1px solid rgba(0, 122, 31, 0.25);
+      padding: 0.6rem;
+      cursor: pointer;
+      min-height: 44px;
+      margin-top: 0.5rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-cancel:hover { color: var(--red); border-color: var(--red); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="/Play.html" class="nav-back">◀ BACK</a>
+  <h1>Lobby</h1>
+
+  <div class="msg-error" id="err"></div>
+
+  <!-- Request status -->
+  <div class="lobby-status">
+    <div class="lobby-status-text" id="statusText">-- NOT IN QUEUE --</div>
+    <button class="btn-primary" id="btnRequest">[ CREATE REQUEST ]</button>
+    <button class="btn-cancel" id="btnCancel" style="display:none">[ CANCEL REQUEST ]</button>
+  </div>
+
+  <!-- Open requests list -->
+  <div class="section-title">-- OPEN CHALLENGES --</div>
+  <div id="requestList" class="loading">loading...</div>
+</div>
+
+<script src="/utils.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const teamID = params.get('team_id');
+  if (!teamID) location.href = '/Play.html';
+
+  const errBox     = document.getElementById('err');
+  const statusText = document.getElementById('statusText');
+  const btnRequest = document.getElementById('btnRequest');
+  const btnCancel  = document.getElementById('btnCancel');
+
+  let hasRequest  = false;
+  let pollCount   = 0;
+  let pollTimer   = null;
+
+  // ── Polling interval logic ────────────────────────────
+  function getInterval() {
+    if (pollCount < 10)  return 1000;
+    if (pollCount < 20)  return 5000;
+    return 10000;
+  }
+
+  function schedulePoll() {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(async () => {
+      await poll();
+    }, getInterval());
+  }
+
+  // ── Poll: check ViewMe (for redirect if fight started) + GetFightRequests ──
+  async function poll() {
+    pollCount++;
+
+    const [meRes, reqRes] = await Promise.all([
+      post('/ViewMe'),
+      post('/GetFightRequests'),
+    ]);
+
+    // Check if our team was pulled into a fight
+    if (meRes && meRes.ok) {
+      const meData = await meRes.json();
+      const myTeam = meData.Teams.find(t => t && t.ID === parseInt(teamID));
+      if (myTeam && myTeam.in_fight) {
+        clearTimeout(pollTimer);
+        location.href = '/ViewFight.html?fight_id=' + myTeam.fight_id + '&team_id=' + teamID;
+        return;
+      }
+    }
+
+    // Render open requests
+    if (reqRes && reqRes.ok) {
+      const requests = await reqRes.json();
+      renderRequests(requests);
+    }
+
+    schedulePoll();
+  }
+
+  function renderRequests(requests) {
+    const list = document.getElementById('requestList');
+    list.className = '';
+    list.innerHTML = '';
+
+    // Filter out our own request from the list
+    const others = requests.filter(r => r.ID !== parseInt(teamID));
+
+    if (others.length === 0) {
+      list.innerHTML = '<div class="empty-list">NO OPEN CHALLENGES</div>';
+      return;
+    }
+
+    others.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'request-card';
+      card.innerHTML = `
+          <div class="request-info">
+            <div class="request-name">${r.name}</div>
+            <div class="request-level">LEVEL ${r.Level}</div>
+          </div>
+          <span class="request-action">[ FIGHT ]</span>
+        `;
+      card.addEventListener('click', async () => {
+        clearTimeout(pollTimer);
+        const res = await postJSON('/StartFight', [parseInt(teamID), r.ID]);
+        if (!res || !res.ok) {
+          const msg = res ? await res.text() : 'Request failed';
+          showError(errBox, msg);
+          schedulePoll();
+          return;
+        }
+        const fightID = await res.text();
+        location.href = '/ViewFight.html?fight_id=' + fightID.trim() + '&team_id=' + teamID;
+      });
+      list.appendChild(card);
+    });
+  }
+
+  // ── Create request ────────────────────────────────────
+  btnRequest.addEventListener('click', async () => {
+    hideMsg(errBox);
+    btnRequest.disabled = true;
+    const res = await postForm('/CreateFightRequest', { team_ID: teamID });
+    if (!res || !res.ok) {
+      const msg = res ? await res.text() : 'Request failed';
+      showError(errBox, msg);
+      btnRequest.disabled = false;
+      return;
+    }
+    hasRequest = true;
+    btnRequest.style.display  = 'none';
+    btnCancel.style.display   = 'block';
+    statusText.textContent    = '-- WAITING FOR OPPONENT --';
+    statusText.classList.add('active');
+  });
+
+  // ── Cancel request ────────────────────────────────────
+  btnCancel.addEventListener('click', async () => {
+    hideMsg(errBox);
+    btnCancel.disabled = true;
+    const res = await postForm('/RetractFightRequest', { team_ID: teamID });
+    if (!res || !res.ok) {
+      const msg = res ? await res.text() : 'Request failed';
+      showError(errBox, msg);
+      btnCancel.disabled = false;
+      return;
+    }
+    hasRequest = false;
+    btnCancel.style.display   = 'none';
+    btnRequest.style.display  = 'block';
+    btnRequest.disabled       = false;
+    statusText.textContent    = '-- NOT IN QUEUE --';
+    statusText.classList.remove('active');
+  });
+
+  // ── Start ─────────────────────────────────────────────
+  poll();
+</script>
+</body>
+</html>

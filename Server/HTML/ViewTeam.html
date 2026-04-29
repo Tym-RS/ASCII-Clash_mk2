@@ -29,9 +29,7 @@
             text-overflow: ellipsis;
         }
 
-        .title-row h1::after {
-            content: none;
-        }
+        .title-row h1::after { content: none; }
 
         .fight-badge {
             font-size: 0.38rem;
@@ -63,9 +61,7 @@
             background: rgba(0, 122, 31, 0.05);
         }
 
-        .monster-banner:active {
-            transform: translate(2px, 2px);
-        }
+        .monster-banner:active { transform: translate(2px, 2px); }
 
         .monster-banner.empty {
             border: 2px dashed rgba(0, 122, 31, 0.35);
@@ -138,13 +134,8 @@
             transition: width 0.3s ease;
         }
 
-        .progress-fill.low {
-            background: var(--yellow, #ffe000);
-        }
-
-        .progress-fill.crit {
-            background: var(--red);
-        }
+        .progress-fill.low   { background: var(--yellow, #ffe000); }
+        .progress-fill.crit  { background: var(--red); }
 
         /* ── Delete ── */
         .delete-wrap {
@@ -164,16 +155,35 @@
             transition: color 0.15s, border-color 0.15s;
         }
 
-        .btn-danger:hover {
-            color: var(--red);
-            border-color: var(--red);
+        .btn-danger:hover  { color: var(--red); border-color: var(--red); }
+        .btn-danger.armed  { color: var(--red); border-color: var(--red); animation: blink 0.6s step-end infinite; }
+
+        /* ── AutoFight toggle ── */
+        .autofight-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--dim);
+            padding: 0.6rem 0.75rem;
+            margin-bottom: 0.75rem;
         }
 
-        .btn-danger.armed {
-            color: var(--red);
-            border-color: var(--red);
-            animation: blink 0.6s step-end infinite;
+        .autofight-label { font-size: 0.45rem; color: var(--dim); }
+
+        .autofight-btn {
+            background: transparent;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.42rem;
+            border: 1px solid var(--dim);
+            color: var(--dim);
+            padding: 0.35rem 0.6rem;
+            cursor: pointer;
+            min-height: 36px;
+            transition: color 0.15s, border-color 0.15s;
         }
+
+        .autofight-btn.on    { color: var(--green); border-color: var(--green); }
+        .autofight-btn:hover { color: var(--text);  border-color: var(--text);  }
     </style>
 </head>
 <body>
@@ -182,10 +192,15 @@
 
     <div class="title-row">
         <h1 id="teamTitle">loading...</h1>
-        <span class="fight-badge" id="fightBadge" style="display:none">⚔ IN FIGHT</span>
+        <span class="fight-badge" id="fightBadge" style="display:none">!! IN FIGHT</span>
     </div>
 
     <div id="monsterList" class="loading">loading...</div>
+
+    <div class="autofight-row" id="autofightRow">
+        <span class="autofight-label">AUTO FIGHT</span>
+        <button class="autofight-btn" id="btnAutoFight">OFF</button>
+    </div>
 
     <div class="delete-wrap">
         <hr class="sep">
@@ -204,22 +219,25 @@
 
     // ── Load ──────────────────────────────────────────────
     async function load() {
-        const res = await postForm('/ViewTeam', {ID: teamID});
-        if (!res || !res.ok) {
-            location.href = '/PlayerTeams.html';
-            return;
-        }
+        const res = await postForm('/ViewTeam', { ID: teamID });
+        if (!res || !res.ok) { location.href = '/PlayerTeams.html'; return; }
         const team = await res.json();
         render(team);
     }
 
     // ── Render ────────────────────────────────────────────
     function render(team) {
-        document.title = 'ASCII Clash — ' + team.name;
+        document.title       = 'ASCII Clash — ' + team.name;
         document.getElementById('teamTitle').textContent = team.name;
 
         const badge = document.getElementById('fightBadge');
         badge.style.display = team.in_fight ? 'inline-block' : 'none';
+
+        // AutoFight toggle state
+        autoFightState = !!team.auto_fight;
+        const afBtn = document.getElementById('btnAutoFight');
+        afBtn.textContent = autoFightState ? 'ON' : 'OFF';
+        afBtn.classList.toggle('on', autoFightState);
 
         const list = document.getElementById('monsterList');
         list.className = '';
@@ -237,9 +255,9 @@
             } else {
                 banner.className = 'monster-banner';
 
-                const maxHP = mon.stats.Health;
-                const curHP = mon.current_health;
-                const hpPct = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
+                const maxHP   = mon.stats.Health;
+                const curHP   = mon.current_health;
+                const hpPct   = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
                 const fillCls = hpPct <= 25 ? 'crit' : hpPct <= 50 ? 'low' : '';
 
                 banner.innerHTML = `
@@ -262,7 +280,7 @@
             </div>
           `;
                 banner.addEventListener('click', () => {
-                    location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + mon.ID
+                    location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + mon.ID;
                 });
             }
 
@@ -287,7 +305,7 @@
         } else {
             clearTimeout(deleteTimer);
             btnDelete.disabled = true;
-            const res = await postForm('/DeleteTeam', {ID: teamID});
+            const res = await postForm('/DeleteTeam', { ID: teamID });
             if (!res || !res.ok) {
                 const msg = res ? await res.text() : 'Request failed';
                 btnDelete.disabled = false;
@@ -298,6 +316,19 @@
             }
             location.href = '/PlayerTeams.html';
         }
+    });
+
+    // ── AutoFight toggle ──────────────────────────────────
+    let autoFightState = false;
+
+    document.getElementById('btnAutoFight').addEventListener('click', async () => {
+        const btn = document.getElementById('btnAutoFight');
+        const newVal = autoFightState ? 0 : 1;
+        const res = await postForm('/SetAutoFight', { team_ID: teamID, set_to: newVal });
+        if (!res || !res.ok) return;
+        autoFightState = newVal === 1;
+        btn.textContent = autoFightState ? 'ON' : 'OFF';
+        btn.classList.toggle('on', autoFightState);
     });
 
     load();

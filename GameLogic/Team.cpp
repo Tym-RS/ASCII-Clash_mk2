@@ -25,9 +25,10 @@ nlohmann::json Team::ToJson() const {
     return {
         {JStr(ID), ID},
         {JStr(name), Name},
-        {JStr(in_fight), IsInFight()},
+        {"in_fight", IsInFight()},
         {JStr(fight_id), fightID},
         {JStr(monsters), mons},
+        {JStr(auto_fight), AutoFight}
     };
 }
 

@@ -2,9 +2,247 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Play</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .team-card {
+            border: 2px solid var(--dim);
+            padding: 0.85rem;
+            margin-bottom: 0.6rem;
+            background: rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .team-card:hover {
+            border-color: var(--green);
+            box-shadow: 0 0 12px rgba(0, 255, 65, 0.1);
+        }
+
+        .team-card.selected {
+            border-color: var(--green);
+            background: rgba(0, 122, 31, 0.08);
+        }
+
+        .team-card.rejoin {
+            border-color: rgba(255, 224, 0, 0.5);
+            cursor: default;
+        }
+
+        .team-name {
+            font-size: 0.65rem;
+            color: var(--green);
+            margin-bottom: 0.5rem;
+        }
+
+        .team-name.rejoin-name { color: #ffe000; }
+
+        .team-meta {
+            font-size: 0.4rem;
+            color: var(--dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .mon-slots {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .mon-slot {
+            border: 1px solid rgba(0, 122, 31, 0.3);
+            background: #000;
+            padding: 0.3rem 0.4rem;
+            min-width: 48px;
+            text-align: center;
+        }
+
+        .mon-slot.empty-mon {
+            opacity: 0.3;
+            border-style: dashed;
+        }
+
+        .mon-slot-type {
+            font-size: 0.38rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-bottom: 0.15rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 56px;
+        }
+
+        .mon-slot-lv {
+            font-size: 0.42rem;
+            color: var(--text);
+        }
+
+        /* ── Mode buttons revealed on selection ── */
+        .mode-row {
+            display: none;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .mode-row.visible { display: flex; }
+
+        .mode-row .btn-primary {
+            flex: 1;
+            font-size: 0.5rem;
+        }
+
+        /* ── Rejoin button ── */
+        .btn-rejoin {
+            width: 100%;
+            background: transparent;
+            color: #ffe000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            border: 1px solid rgba(255, 224, 0, 0.5);
+            padding: 0.6rem;
+            cursor: pointer;
+            min-height: 44px;
+            margin-top: 0.4rem;
+            transition: background 0.15s;
+        }
+
+        .btn-rejoin:hover { background: rgba(255, 224, 0, 0.07); }
+
+        .section-title {
+            font-size: 0.45rem;
+            color: var(--dim);
+            letter-spacing: 0.15em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.25);
+        }
+    </style>
 </head>
 <body>
+<div class="container">
+    <a href="/Home.html" class="nav-back">◀ BACK</a>
+    <h1>Play</h1>
 
+    <div class="msg-error" id="err"></div>
+    <div id="content" class="loading">loading...</div>
+</div>
+
+<script src="/utils.js"></script>
+<script>
+    let myTeams = [];
+    let selectedTeamID = null;
+
+    async function init() {
+        const res = await post('/ViewMe');
+        if (!res || !res.ok) { location.href = '/index.html'; return; }
+        const data = await res.json();
+        myTeams = data.Teams.filter(t => t !== null);
+        render(data.Teams);
+    }
+
+    function render(teams) {
+        const content = document.getElementById('content');
+        content.className = '';
+        content.innerHTML = '';
+
+        const rejoinTeams = teams.filter(t => t && t.in_fight);
+        const availTeams  = teams.filter(t => t && !t.in_fight);
+
+        // ── Rejoin section ──
+        if (rejoinTeams.length > 0) {
+            const sec = document.createElement('div');
+            sec.innerHTML = '<div class="section-title">-- ONGOING FIGHTS --</div>';
+            rejoinTeams.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'team-card rejoin';
+                card.innerHTML = `
+            <div class="team-name rejoin-name">${t.name}</div>
+            <div class="team-meta">currently in a fight</div>
+            <button class="btn-rejoin">[ REJOIN FIGHT ]</button>
+          `;
+                card.querySelector('.btn-rejoin').addEventListener('click', () => {
+                    location.href = '/viewFight.html?fight_id=' + t.fight_id + '&team_id=' + t.ID;
+                });
+                sec.appendChild(card);
+            });
+            content.appendChild(sec);
+        }
+
+        // ── Team selection ──
+        if (availTeams.length > 0) {
+            const sec = document.createElement('div');
+            sec.innerHTML = '<div class="section-title">-- SELECT A TEAM --</div>';
+
+            availTeams.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'team-card';
+
+                const slotsHtml = t.monsters.map(m => {
+                    if (!m) return `
+              <div class="mon-slot empty-mon">
+                <div class="mon-slot-type">----</div>
+                <div class="mon-slot-lv">--</div>
+              </div>`;
+                    return `
+              <div class="mon-slot">
+                <div class="mon-slot-type">${m.Type}</div>
+                <div class="mon-slot-lv">LV.${m.Level}</div>
+              </div>`;
+                }).join('');
+
+                card.innerHTML = `
+            <div class="team-name">${t.name}</div>
+            <div class="mon-slots">${slotsHtml}</div>
+            <div class="mode-row" id="mode-${t.ID}">
+              <button class="btn-primary" id="sp-${t.ID}">[ SINGLEPLAYER ]</button>
+              <button class="btn-primary" id="mp-${t.ID}">[ MULTIPLAYER ]</button>
+            </div>
+          `;
+
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('button')) return;
+                    // Deselect all
+                    document.querySelectorAll('.team-card').forEach(c => c.classList.remove('selected'));
+                    document.querySelectorAll('.mode-row').forEach(r => r.classList.remove('visible'));
+                    // Select this
+                    card.classList.add('selected');
+                    document.getElementById('mode-' + t.ID).classList.add('visible');
+                    selectedTeamID = t.ID;
+                });
+
+                card.querySelector('#sp-' + t.ID).addEventListener('click', async () => {
+                    const res = await postJSON('/StartFight', [t.ID, -1]);
+                    if (!res || !res.ok) {
+                        const msg = res ? await res.text() : 'Request failed';
+                        showError(document.getElementById('err'), msg);
+                        return;
+                    }
+                    const fightID = await res.text();
+                    location.href = '/ViewFight.html?fight_id=' + fightID.trim() + '&team_id=' + t.ID;
+                });
+
+                card.querySelector('#mp-' + t.ID).addEventListener('click', () => {
+                    location.href = '/Lobby.html?team_id=' + t.ID;
+                });
+
+                sec.appendChild(card);
+            });
+
+            content.appendChild(sec);
+        }
+
+        if (rejoinTeams.length === 0 && availTeams.length === 0) {
+            content.innerHTML = `
+          <div style="text-align:center;font-size:0.5rem;color:var(--dim);padding:1.5rem 0">
+            NO TEAMS AVAILABLE
+          </div>`;
+        }
+    }
+
+    init();
+</script>
 </body>
 </html>

@@ -79,7 +79,7 @@
     if (!loginRes) { btn.disabled = false; return; }
 
     if (loginRes.ok) {
-      window.location.href = '/home.html';
+      window.location.href = '/Home.html';
     } else {
       const msg = await loginRes.text();
       showError(err, msg || 'Registered but login failed — please log in manually');
