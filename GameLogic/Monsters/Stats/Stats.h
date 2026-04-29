@@ -34,7 +34,7 @@ constexpr inline StatInfo StatInfos[] = {
 };
 
 
-const inline std::unordered_map<std::string, Stat> StatStringMap = {
+const inline std::unordered_map<std::string, Stat> StringStatMap = {
 #define X(stat, ...) {#stat, Stat::stat},
     MONSTER_STATS
 #undef X

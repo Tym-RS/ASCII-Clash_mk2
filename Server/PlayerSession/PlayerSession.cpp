@@ -47,12 +47,6 @@ bool PlayerSession::CheckActive() {
     return true;
 }
 
-Monster *PlayerSession::TryGetMonster(const int id) const {
-    for (const auto &t: teams)
-        for (const auto &m: t->Monsters())
-            if (m && m->ID == id) return m.get();
-    return nullptr;
-}
 
 int PlayerSession::GetScore() const {
     int score = 0;
@@ -76,14 +70,21 @@ std::shared_ptr<Team> PlayerSession::TryGetCreateNewTeam(std::string name, std::
     return teams[nextFree];
 }
 
+Team *PlayerSession::TryGetTeam(const int id, std::string *err) const {
+    for (const auto &t: teams)
+        if (t && t->ID == id) return t.get();
+    SET_ERR("Team not found.");
+    return nullptr;
+}
+
 bool PlayerSession::TryDeleteTeam(const int id, std::string *err) {
-    for (int i = 0; i < teams.size(); i++) {
-        if (!teams[i] || teams[i]->ID != id) continue;
-        if (teams[i]->IsInFight()) {
+    for (auto &team: teams) {
+        if (!team || team->ID != id) continue;
+        if (team->IsInFight()) {
             SET_ERR("Team is currently in a fight.");
             return false;
         }
-        teams[i] = nullptr;
+        team = nullptr;
         return true;
     }
     SET_ERR("Team not found.");

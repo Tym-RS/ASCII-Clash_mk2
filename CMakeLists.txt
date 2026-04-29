@@ -12,7 +12,6 @@ add_executable(ASCII_Clash main.cpp
         GameLogic/Fighting/Log/NestedLogger.h
         GameLogic/Monsters/Stats/Stats.h
         GameLogic/Fighting/Fight.h
-        Server/DEPRGameServer.cpp
         Server/GameServer/GameServer.h
         Server/PlayerSession/PlayerSession.h
         Server/PlayerSession/PlayerSession.cpp

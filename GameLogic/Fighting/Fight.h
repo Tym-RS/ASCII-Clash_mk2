@@ -14,7 +14,6 @@ public:
         Monster *attacker, *defender;
     };
 
-
     [[nodiscard]] Team *Winner() const { return winner; }
 
     explicit Fight(const std::vector<std::shared_ptr<Team> > &teams);

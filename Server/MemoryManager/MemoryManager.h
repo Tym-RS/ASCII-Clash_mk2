@@ -15,17 +15,24 @@ public:
 
     std::shared_ptr<Team> TryGetTeam(int id, ERR_PARAM);
 
+    bool TryOpenFightRequest(const std::shared_ptr<Team> &team, ERR_PARAM);
+
+    nlohmann::json GetFightRequests();
+
+    void CleanFightRequests();
+
+    bool RetractFightRequest(const std::shared_ptr<Team> &team, ERR_PARAM);
+
+
     std::shared_ptr<Team> GetNewAITeam(int level) const;
 
     Fight *TryGetFight(int id, ERR_PARAM);
 
     int TryCreateFight(const std::vector<int> &teamIDs, ERR_PARAM);
 
+    nlohmann::json GetLeaderboard(int limit = 25) const;
+
     bool TryRegisterPlayer(std::string username, int password, ERR_PARAM) const;
-
-    bool TryDeleteTeam(const std::string &cookie, int id, ERR_PARAM);
-
-    int TryGetNewTeamID(const std::string &cookie, const std::string &name, ERR_PARAM);
 
     std::string GetNewSessionID(std::string username, int password, ERR_PARAM);
 
@@ -33,7 +40,11 @@ public:
 
     void Cleanup();
 
-    void SaveAll();
+    void Save();
+
+    void Save(const PlayerSession *player);
+
+    void Save(const Fight *fight);
 
 private:
     Database::SaveManager *saveManager;
@@ -41,7 +52,7 @@ private:
     mutable std::recursive_mutex mtx;
 
     std::map<std::string, std::unique_ptr<PlayerSession> > loadedSessions{};
-    std::map<int, std::weak_ptr<Team> > loadedTeams{};;
+    std::map<int, std::weak_ptr<Team> > loadedTeams{}, fightRequestingTeams{};
     std::map<int, std::unique_ptr<Fight> > loadedFights{};
 };
 

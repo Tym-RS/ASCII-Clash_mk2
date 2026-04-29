@@ -26,7 +26,6 @@
       font-size: 0.38rem;
       color: var(--dim);
       letter-spacing: 0.2em;
-      animation: blink 1.4s step-end infinite;
     }
 
     .register-block {
@@ -74,7 +73,7 @@
 
   <div class="logo-block">
     <h1>ASCII Clash</h1>
-    <div class="logo-tagline">▶ INSERT COIN TO PLAY ◀</div>
+    <div class="logo-tagline">-----PLACEHOLDER_TEXT------</div>
   </div>
 
   <div class="msg-error" id="err"></div>
@@ -95,7 +94,7 @@
 
   <div class="register-block">
     <span>New player?</span>
-    <a href="/register.html">▶ REGISTER HERE</a>
+    <a href="/Register.html">▶ REGISTER HERE</a>
   </div>
 
 </div>
@@ -116,7 +115,7 @@
     if (!res) return;
 
     if (res.ok) {
-      window.location.href = '/home.html';
+      window.location.href = '/Home.html';
     } else {
       const msg = await res.text();
       showError(err, msg || 'Login failed');

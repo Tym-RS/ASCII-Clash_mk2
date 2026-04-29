@@ -16,15 +16,16 @@ public:
 
     [[nodiscard]] bool CheckActive();
 
-    [[nodiscard]] Monster *TryGetMonster(int id) const;
-
     [[nodiscard]] int GetScore() const;
 
     std::shared_ptr<Team> TryGetCreateNewTeam(std::string name, ERR_PARAM);
 
+    Team *TryGetTeam(int id, ERR_PARAM) const;
+
     bool TryDeleteTeam(int id, ERR_PARAM);
 
     std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> *Teams() { return &teams; }
+    const std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> *Teams() const { return &teams; }
 
     const int PlayerID;
     const std::string SessionID;

@@ -30,7 +30,7 @@ const inline std::unordered_map<MonsterType, MonDescription> MonsterDescriptions
 #undef X
 };
 
-const inline std::unordered_map<std::string, MonsterType> MonsterTypeStringMap = {
+const inline std::unordered_map<std::string, MonsterType> StringMonsterTyperMap = {
 #define X(type, ...) { #type, MonsterType::type },
     MONSTER_TYPES
 #undef X

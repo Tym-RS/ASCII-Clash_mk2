@@ -40,6 +40,8 @@ namespace Config {
 
     namespace Team {
         constexpr int Size = 5;
+        inline static std::regex teamNameRegex(R"(^[A-Za-z0-9_()\-:;\[\]{}]{1,15}$)");
+        inline static std::regex monsterNameRegex(R"(^[A-Za-z0-9_()\-:;\[\]{}]{1,15}$)");
     }
 
     namespace Fight {

@@ -14,7 +14,7 @@ using namespace Database;
 
 class GameServer final {
 public:
-    explicit GameServer(SaveManager *saveManager);
+    explicit GameServer(std::unique_ptr<MemoryManager> memory);
 
 #define X(func) void func(REQ_PARAMS);
     ENDPOINTS
@@ -23,8 +23,7 @@ public:
     void Run();
 
 private:
-    SaveManager *db;
-    MemoryManager memory;
+    std::unique_ptr<MemoryManager> memory;
     httplib::Server server;
 };
 

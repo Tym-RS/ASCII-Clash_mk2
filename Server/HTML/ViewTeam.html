@@ -29,7 +29,9 @@
             text-overflow: ellipsis;
         }
 
-        .title-row h1::after { content: none; }
+        .title-row h1::after {
+            content: none;
+        }
 
         .fight-badge {
             font-size: 0.38rem;
@@ -61,7 +63,9 @@
             background: rgba(0, 122, 31, 0.05);
         }
 
-        .monster-banner:active { transform: translate(2px, 2px); }
+        .monster-banner:active {
+            transform: translate(2px, 2px);
+        }
 
         .monster-banner.empty {
             border: 2px dashed rgba(0, 122, 31, 0.35);
@@ -134,8 +138,13 @@
             transition: width 0.3s ease;
         }
 
-        .progress-fill.low   { background: var(--yellow, #ffe000); }
-        .progress-fill.crit  { background: var(--red); }
+        .progress-fill.low {
+            background: var(--yellow, #ffe000);
+        }
+
+        .progress-fill.crit {
+            background: var(--red);
+        }
 
         /* ── Delete ── */
         .delete-wrap {
@@ -155,8 +164,16 @@
             transition: color 0.15s, border-color 0.15s;
         }
 
-        .btn-danger:hover  { color: var(--red); border-color: var(--red); }
-        .btn-danger.armed  { color: var(--red); border-color: var(--red); animation: blink 0.6s step-end infinite; }
+        .btn-danger:hover {
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        .btn-danger.armed {
+            color: var(--red);
+            border-color: var(--red);
+            animation: blink 0.6s step-end infinite;
+        }
     </style>
 </head>
 <body>
@@ -187,15 +204,18 @@
 
     // ── Load ──────────────────────────────────────────────
     async function load() {
-        const res = await postForm('/ViewTeam', { ID: teamID });
-        if (!res || !res.ok) { location.href = '/PlayerTeams.html'; return; }
+        const res = await postForm('/ViewTeam', {ID: teamID});
+        if (!res || !res.ok) {
+            location.href = '/PlayerTeams.html';
+            return;
+        }
         const team = await res.json();
         render(team);
     }
 
     // ── Render ────────────────────────────────────────────
     function render(team) {
-        document.title       = 'ASCII Clash — ' + team.name;
+        document.title = 'ASCII Clash — ' + team.name;
         document.getElementById('teamTitle').textContent = team.name;
 
         const badge = document.getElementById('fightBadge');
@@ -217,9 +237,9 @@
             } else {
                 banner.className = 'monster-banner';
 
-                const maxHP   = mon.stats.Health;
-                const curHP   = mon.current_health;
-                const hpPct   = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
+                const maxHP = mon.stats.Health;
+                const curHP = mon.current_health;
+                const hpPct = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
                 const fillCls = hpPct <= 25 ? 'crit' : hpPct <= 50 ? 'low' : '';
 
                 banner.innerHTML = `
@@ -242,7 +262,7 @@
             </div>
           `;
                 banner.addEventListener('click', () => {
-                    location.href = '/ViewMonster.html?id=' + mon.ID;
+                    location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + mon.ID
                 });
             }
 
@@ -267,7 +287,7 @@
         } else {
             clearTimeout(deleteTimer);
             btnDelete.disabled = true;
-            const res = await postForm('/DeleteTeam', { ID: teamID });
+            const res = await postForm('/DeleteTeam', {ID: teamID});
             if (!res || !res.ok) {
                 const msg = res ? await res.text() : 'Request failed';
                 btnDelete.disabled = false;

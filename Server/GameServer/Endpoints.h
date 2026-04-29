@@ -4,7 +4,9 @@
 
 #define ENDPOINTS X(Leaderboard) X(GameInfo) \
     X(Login) X(Register) X(Logout) X(ViewMe) \
-    X(CreateTeam) X(DeleteTeam) X(ViewTeam) \
+    X(CreateTeam) X(DeleteTeam) X(ViewTeam) X(SetAutoFight) \
     X(CreateMonster) X(DeleteMonster) X(LevelMonster) X(ViewMonster) \
-    //X(ViewFight) X(SubmitFightAction)
+    X(CreateFightRequest) X(GetFightRequests) X(RetractFightRequest)\
+    X(StartFight) X(ViewFight) X(SubmitFightAction)
+
 #endif

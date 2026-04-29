@@ -7,7 +7,9 @@
 int main(const int argc, const char *argv[]) {
     srand(time(nullptr));
     SaveManager sm(argc > 1 ? argv[1] : "Default");
-    GameServer server = GameServer(&sm);
+    auto memoryTemp = std::make_unique<MemoryManager>(&sm);
+    const auto memory = memoryTemp.get();
+    GameServer server = GameServer(std::move(memoryTemp));
 
     std::thread serverThread([&server] { server.Run(); });
 

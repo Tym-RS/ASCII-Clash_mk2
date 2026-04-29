@@ -29,7 +29,7 @@ nlohmann::json Monster::ToJson() const {
 }
 
 std::unique_ptr<Monster> Monster::FromJson(const nlohmann::json &j) {
-    const MonsterType type = MonsterTypeStringMap.at(j["type"].get<std::string>());
+    const MonsterType type = StringMonsterTyperMap.at(j["type"].get<std::string>());
     const auto stats = StatDict::FromJson(j["stats"]);
     auto m = CreateMonster(j["name"].get<std::string>(), j["ID"].get<int>(), type, &stats);
     m->currentHealth = j["current_health"].get<int>();

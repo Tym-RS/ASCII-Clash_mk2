@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — New Monster</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        /* ── Carousel ── */
+        .carousel-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .carousel-wrap {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            min-height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-card {
+            width: 100%;
+            text-align: center;
+            padding: 0.75rem 0.5rem;
+            border: 2px solid var(--dim);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .carousel-img {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            display: block;
+            margin: 0 auto 0.6rem;
+        }
+
+        .carousel-name {
+            font-size: 0.6rem;
+            color: var(--green);
+            margin-bottom: 0.4rem;
+        }
+
+        .carousel-desc {
+            font-size: 0.42rem;
+            color: var(--dim);
+            line-height: 2;
+        }
+
+        /* ── Dots ── */
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.4rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            background: transparent;
+            border: 1px solid var(--dim);
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .carousel-dot.active {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        /* ── Slide animations ── */
+        @keyframes slideOutLeft {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-18px);
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(18px);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a id="backLink" href="/PlayerTeams.html" class="nav-back">◀ BACK</a>
+    <h1>New Monster</h1>
+
+    <div class="msg-error" id="err"></div>
+
+    <div class="field">
+        <label for="monsterName">Name</label>
+        <input type="text" id="monsterName" name="monsterName"
+               spellcheck="false" maxlength="32" autocomplete="off">
+    </div>
+
+    <div class="section-label" style="margin-bottom:0.5rem">Type</div>
+
+    <div class="carousel-row">
+        <button class="btn-small" id="btnPrev" aria-label="Previous type">◀</button>
+        <div class="carousel-wrap" id="carouselWrap">
+            <div class="loading">loading...</div>
+        </div>
+        <button class="btn-small" id="btnNext" aria-label="Next type">▶</button>
+    </div>
+
+    <div class="carousel-dots" id="carouselDots"></div>
+
+    <button class="btn-primary" id="btnCreate">[ CREATE ]</button>
+</div>
+
+<script src="/utils.js"></script>
+<script>
+    const params = new URLSearchParams(location.search);
+    const teamID = params.get('teamID');
+    if (!teamID) location.href = '/PlayerTeams.html';
+
+    // Fix back link to return to correct team
+    document.getElementById('backLink').href = '/ViewTeam.html?id=' + teamID;
+
+    const errBox = document.getElementById('err');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const wrap = document.getElementById('carouselWrap');
+    const dotsEl = document.getElementById('carouselDots');
+    const btnCreate = document.getElementById('btnCreate');
+
+    let types = [];   // [{ name, desc }]
+    let idx = 0;
+    let locked = false;
+
+    // ── Load types from GameInfo ──────────────────────────
+    async function loadTypes() {
+        const res = await post('/GameInfo');
+        if (!res || !res.ok) {
+            showError(errBox, 'Failed to load monster types');
+            return;
+        }
+        const data = await res.json();
+        const monsters = data.Monsters;
+        if (!monsters) {
+            showError(errBox, 'No monster types found');
+            return;
+        }
+
+        types = Object.entries(monsters).map(([name, desc]) => ({name, desc}));
+        if (types.length === 0) {
+            showError(errBox, 'No monster types found');
+            return;
+        }
+
+        const showNav = types.length > 1;
+        btnPrev.style.visibility = showNav ? 'visible' : 'hidden';
+        btnNext.style.visibility = showNav ? 'visible' : 'hidden';
+
+        renderCard(idx, null);
+        buildDots();
+    }
+
+    // ── Render card ───────────────────────────────────────
+    function renderCard(i, animIn) {
+        wrap.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'carousel-card';
+        card.innerHTML = `
+        <img class="carousel-img"
+             src="/images/${encodeURIComponent(types[i].name)}.png"
+             alt="${types[i].name}"
+             onerror="this.src='/images/NA.png'">
+        <div class="carousel-name">${types[i].name}</div>
+        <div class="carousel-desc">${types[i].desc}</div>
+      `;
+        if (animIn) card.style.animation = `${animIn} 160ms ease forwards`;
+        wrap.appendChild(card);
+        updateDotActive();
+    }
+
+    // ── Dots ──────────────────────────────────────────────
+    function buildDots() {
+        dotsEl.innerHTML = '';
+        types.forEach((_, i) => {
+            const dot = document.createElement('button');
+            dot.className = 'carousel-dot' + (i === idx ? ' active' : '');
+            dot.setAttribute('aria-label', 'Select type ' + (i + 1));
+            dot.addEventListener('click', () => {
+                if (locked || i === idx) return;
+                const dir = i > idx ? 1 : -1;
+                idx = i;
+                buildDots();
+                animateTransition(dir);
+            });
+            dotsEl.appendChild(dot);
+        });
+    }
+
+    function updateDotActive() {
+        dotsEl.querySelectorAll('.carousel-dot')
+            .forEach((d, i) => d.classList.toggle('active', i === idx));
+    }
+
+    // ── Slide animation ───────────────────────────────────
+    function animateTransition(dir) {
+        if (locked) return;
+        locked = true;
+        const outAnim = dir > 0 ? 'slideOutLeft' : 'slideOutRight';
+        const inAnim = dir > 0 ? 'slideInRight' : 'slideInLeft';
+        const card = wrap.querySelector('.carousel-card');
+        if (card) card.style.animation = `${outAnim} 160ms ease forwards`;
+        setTimeout(() => {
+            renderCard(idx, inAnim);
+            setTimeout(() => {
+                locked = false;
+            }, 160);
+        }, 160);
+    }
+
+    // ── Nav buttons ───────────────────────────────────────
+    btnPrev.addEventListener('click', () => {
+        if (locked || types.length < 2) return;
+        idx = (idx - 1 + types.length) % types.length;
+        buildDots();
+        animateTransition(-1);
+    });
+
+    btnNext.addEventListener('click', () => {
+        if (locked || types.length < 2) return;
+        idx = (idx + 1) % types.length;
+        buildDots();
+        animateTransition(1);
+    });
+
+    // ── Create monster ────────────────────────────────────
+    btnCreate.addEventListener('click', async () => {
+        hideMsg(errBox);
+
+        const name = document.getElementById('monsterName').value.trim();
+        if (!name) {
+            showError(errBox, 'Please enter a name');
+            return;
+        }
+        if (types.length === 0) {
+            showError(errBox, 'No types loaded yet');
+            return;
+        }
+
+        const type = types[idx].name;
+        btnCreate.disabled = true;
+
+        const res = await postForm('/CreateMonster', {team_ID: teamID, name, type});
+        if (!res) {
+            btnCreate.disabled = false;
+            return;
+        }
+
+        if (res.ok) {
+            const newID = await res.text();
+            location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + newID.trim()
+        } else {
+            const msg = await res.text();
+            showError(errBox, msg || 'Failed to create monster');
+            btnCreate.disabled = false;
+        }
+    });
+
+    loadTypes();
+</script>
+</body>
+</html>

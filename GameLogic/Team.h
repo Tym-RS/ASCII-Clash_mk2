@@ -18,22 +18,27 @@ public:
 
     [[nodiscard]] nlohmann::json ToJson() const override;
 
-    [[nodiscard]] bool IsInFight() const { return isInFight; }
+    [[nodiscard]] bool IsInFight() const { return fightID != -1; }
+
+    [[nodiscard]] int CurrentFightID() const { return fightID; }
+
+    [[nodiscard]] int GetLvl() const;
 
     int TryGetNewMonsterID(const std::string &name, MonsterType type, ERR_PARAM);
 
-    void EnterFight(NestedLogger *l);
+    [[nodiscard]] Monster *TryGetMonster(int id, ERR_PARAM) const;
+
+    bool TryDeleteMonster(int id, ERR_PARAM);
+
+    void EnterFight(int id, NestedLogger *l);
 
     void ExitFight(int expGain = 0);
 
-    [[nodiscard]]
-
-    const std::array<std::unique_ptr<Monster>, Config::Team::Size> &Monsters() const { return monsters; }
-
+    [[nodiscard]] const std::array<std::unique_ptr<Monster>, Config::Team::Size> &Monsters() const { return monsters; }
     [[nodiscard]] std::array<std::unique_ptr<Monster>, Config::Team::Size> &Monsters() { return monsters; }
 
 private:
-    bool isInFight = false;
+    int fightID = -1;
     std::array<std::unique_ptr<Monster>, Config::Team::Size> monsters{};
 };
 

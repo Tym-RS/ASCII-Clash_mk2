@@ -18,7 +18,7 @@ inline int GetHash(const std::vector<std::shared_ptr<Team> > &teams) {
 
 Fight::Fight(const std::vector<std::shared_ptr<Team> > &teams)
     : ID(GetHash(teams)), fightSize(teams.size()), teams(teams) {
-    for (const auto &t: teams) t->EnterFight(&log);
+    for (const auto &t: teams) t->EnterFight(ID, &log);
     turnIndex = std::rand() % fightSize;
     log.Append(ActiveTeam()->Name + " starts!", LType::Major);
 }
@@ -37,7 +37,7 @@ nlohmann::json Fight::ToJson() const {
         {JStr(ID), ID},
         {JStr(is_ongoing), (winner == nullptr)},
         {JStr(winner), wj},
-        {JStr(active_team), ActiveTeam()->Name},
+        {JStr(active_team_name), ActiveTeam()->Name},
         {JStr(turn), turnIndex},
         {JStr(log), log.ToJson()},
         {JStr(participants), participants}

@@ -6,38 +6,42 @@
     <title>ASCII Clash — About</title>
     <link rel="stylesheet" href="/style.css">
     <style>
+        /* ── Section blocks ── */
         .about-section {
-            margin-bottom: 2rem;
+            border: 1px solid var(--dim);
+            background: rgba(0, 0, 0, 0.35);
+            padding: 1rem 1.1rem;
+            margin-bottom: 0.75rem;
         }
 
-        .about-section h2 {
-            font-size: 0.6rem;
+        .about-section-title {
+            font-size: 0.5rem;
             color: var(--green);
+            letter-spacing: 0.2em;
             text-transform: uppercase;
             margin-bottom: 0.75rem;
             padding-bottom: 0.4rem;
-            border-bottom: 1px solid rgba(0, 122, 31, 0.4);
+            border-bottom: 1px solid rgba(0, 122, 31, 0.35);
         }
-
-        /* override h2 default margin from base stylesheet */
-        .about-section h2::after { content: none; }
 
         .about-section p {
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             color: var(--text);
-            line-height: 2.3;
-            margin-bottom: 0.75rem;
-            opacity: 0.85;
+            line-height: 2.4;
+            margin-bottom: 0.6rem;
+            opacity: 0.8;
         }
+
+        .about-section p:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
 <div class="container">
-    <a href="/home.html" class="nav-back">◀ BACK</a>
+    <a href="/Home.html" class="nav-back">◀ BACK</a>
     <h1>About</h1>
 
     <div class="about-section">
-        <h2>About This Project</h2>
+        <div class="about-section-title">About This Project</div>
         <p>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
             tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
@@ -52,7 +56,7 @@
     </div>
 
     <div class="about-section">
-        <h2>Contact</h2>
+        <div class="about-section-title">Contact</div>
         <p>
             Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
             doloremque laudantium, totam rem aperiam eaque ipsa quae ab illo inventore

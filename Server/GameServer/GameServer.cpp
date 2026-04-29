@@ -1,6 +1,7 @@
 #include "GameServer.h"
 #include "./ServerHelpers.h"
 #include "Endpoints.h"
+#include "Database/TableDefs.h"
 #include "Imports/inja.hpp"
 
 #define SESSION_ID const auto sessionID = GetCookie("session", req, res); if(sessionID.empty()) {RETURN_RES("Login required.", 401)}
@@ -9,7 +10,7 @@ using namespace httplib;
 static const std::string SESSION_COOKIE = "session";
 
 
-GameServer::GameServer(SaveManager *saveManager) : db(saveManager), memory(MemoryManager(saveManager)) {
+GameServer::GameServer(std::unique_ptr<MemoryManager> memory) : memory(std::move(memory)) {
     server.set_mount_point("/", ServerMountPath);
 
     // Register ALL endpoints to their POST paths.
@@ -34,6 +35,9 @@ GameServer::GameServer(SaveManager *saveManager) : db(saveManager), memory(Memor
 
 
 void GameServer::Leaderboard(const Request &req, Response &res) {
+    int limit = 25;
+    if (req.has_param("limit")) limit = std::stoi(req.get_param_value("limit"));
+    RETURN_RES(memory->GetLeaderboard(limit).dump(), 200);
 }
 
 void GameServer::GameInfo(const Request &req, Response &res) {
@@ -45,7 +49,7 @@ void GameServer::Login(const Request &req, Response &res) {
     const std::string usr = req.get_param_value("username");
     const std::string pwd = req.get_param_value("password");
     std::string err;
-    const auto sessionID = memory.GetNewSessionID(usr, Hash(pwd), &err);
+    const auto sessionID = memory->GetNewSessionID(usr, Hash(pwd), &err);
     if (sessionID.empty()) RETURN_RES(err, 404);
     res.status = 200;
     SetCookie(SESSION_COOKIE, sessionID, req, res);
@@ -62,7 +66,7 @@ void GameServer::Register(const Request &req, Response &res) {
         RETURN_RES("Password must be at least 5 characters and contain at least one special character", 400);
 
     std::string err;
-    if (memory.TryRegisterPlayer(usr, Hash(pwd), &err)) {
+    if (memory->TryRegisterPlayer(usr, Hash(pwd), &err)) {
         res.status = 201;
         return;
     }
@@ -71,8 +75,8 @@ void GameServer::Register(const Request &req, Response &res) {
 
 void GameServer::Logout(const Request &req, Response &res) {
     SESSION_ID;
-    std::string err = "Logged out successfully.";
-    memory.TryLogoutPlayer(sessionID, &err);
+    std::string err = "";
+    memory->TryLogoutPlayer(sessionID, &err);
     DeleteCookie(SESSION_COOKIE, req, res);
     RETURN_RES(err, 200);
 }
@@ -80,7 +84,7 @@ void GameServer::Logout(const Request &req, Response &res) {
 void GameServer::ViewMe(const Request &req, Response &res) {
     SESSION_ID;
     std::string err;
-    const auto p = memory.TryGetPlayer(sessionID, &err);
+    const auto p = memory->TryGetPlayer(sessionID, &err);
     if (!p) RETURN_RES(err, 401);
 
     nlohmann::json teamJ = nlohmann::json::array();
@@ -99,9 +103,11 @@ void GameServer::ViewMe(const Request &req, Response &res) {
                 });
         }
         teamJ.push_back({
-            {"Name", t->Name},
-            {"ID", t->ID},
-            {"Monsters", monJ}
+            {COL(Teams, name), t->Name},
+            {COL(Teams, ID), t->ID},
+            {COL(Teams, fight_id), t->CurrentFightID()},
+            {COL(Teams, in_fight), t->IsInFight()},
+            {COL(Teams, monsters), monJ},
         });
     }
     const nlohmann::json j{
@@ -113,47 +119,218 @@ void GameServer::ViewMe(const Request &req, Response &res) {
 }
 
 void GameServer::CreateTeam(const Request &req, Response &res) {
-    REQUIRE_PARAMS("Name")
-    const std::string name = req.get_param_value("Name");
-    std::string err;
     SESSION_ID
-    const int id = memory.TryGetNewTeamID(sessionID, name, &err);
-    if (id == -1) RETURN_RES(err, 400)
-    RETURN_RES(std::to_string(id), 201);
+    REQUIRE_PARAMS("name")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+
+    const std::string name = req.get_param_value("name");
+    if (!std::regex_match(name, Config::Player::usernameRegex))
+        RETURN_RES("Team name must be 1–15 chars and may only contain letters, numbers, _ ( ) - : ; [ ] { }", 400);
+    const auto team = player->TryGetCreateNewTeam(name, &err);
+    if (!team) RETURN_RES(err, 400)
+    memory->Save(player);
+    RETURN_RES(std::to_string(team->ID), 201);
 }
 
 void GameServer::DeleteTeam(const Request &req, Response &res) {
-    REQUIRE_PARAMS("ID");
-    const int id = std::stoi(req.get_param_value("ID"));
-    std::string err;
     SESSION_ID
-    if (memory.TryDeleteTeam(sessionID, id, &err)) {
-        res.status = 201;
-        return;
-    }
-    RETURN_RES(err, 400)
+    REQUIRE_PARAMS("ID");
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+
+    if (!player->TryDeleteTeam(std::stoi(req.get_param_value("ID")), &err)) RETURN_RES(err, 400)
+    memory->Save(player);
+    res.status = 205;
 }
 
 void GameServer::ViewTeam(const Request &req, Response &res) {
+    SESSION_ID
     REQUIRE_PARAMS("ID")
     const int id = std::stoi(req.get_param_value("ID"));
     std::string err;
-    SESSION_ID
-    const auto team = memory.TryGetTeam(id, &err);
-    if (!team) RETURN_RES(err, 400);
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404)
+    const auto team = player->TryGetTeam(id, &err);
+    if (!team) RETURN_RES(err, 404);
     RETURN_RES(team->ToJson().dump(), 200);
 }
 
+void GameServer::SetAutoFight(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID", "set_to")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404)
+    const int id = std::stoi(req.get_param_value("team_ID"));
+    const auto team = player->TryGetTeam(id, &err);
+    if (!team) RETURN_RES(err, 404)
+    team->AutoFight = std::stoi(req.get_param_value("auto_fight")) == 1; //TODO Implement in HTML
+    res.status = 204;
+}
+
 void GameServer::CreateMonster(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID", "type", "name")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404)
+    const int id = std::stoi(req.get_param_value("team_ID"));
+    const auto team = player->TryGetTeam(id, &err);
+    if (!team) RETURN_RES(err, 404)
+    const std::string name = req.get_param_value("name");
+    if (!std::regex_match(name, Config::Player::usernameRegex))
+        RETURN_RES("Monster name must be 1–15 chars and may only contain letters, numbers, _ ( ) - : ; [ ] { }", 400);
+    const MonsterType type = StringMonsterTyperMap.at(req.get_param_value("type"));
+    const int newID = team->TryGetNewMonsterID(name, type, &err);
+    if (newID == -1) RETURN_RES(err, 400);
+    memory->Save(player);
+    res.set_content(std::to_string(newID), "text/plain");
+    res.status = 201;
 }
 
 void GameServer::DeleteMonster(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID", "monster_ID")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404)
+    const auto team = player->TryGetTeam(std::stoi(req.get_param_value("team_ID")), &err);
+    if (!team) RETURN_RES(err, 404)
+    if (!team->TryDeleteMonster(std::stoi(req.get_param_value("monster_ID")), &err)) RETURN_RES(err, 404);
+    memory->Save(player);
+    res.status = 205;
 }
 
 void GameServer::LevelMonster(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID", "monster_ID")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+    const auto team = player->TryGetTeam(std::stoi(req.get_param_value("team_ID")), &err);
+    if (!team) RETURN_RES(err, 404);
+    if (team->IsInFight()) RETURN_RES("Monsters canNOT be leveled while in a fight.", 403);
+    const auto mon = team->TryGetMonster(std::stoi(req.get_param_value("monster_ID")), &err);
+    if (!mon) RETURN_RES(err, 404);
+
+    nlohmann::json data;
+    try { data = nlohmann::json::parse(req.body); } catch (...) RETURN_RES("Invalid inputs", 400);
+
+    int totalCost = 0;
+    for (const auto &[key, value]: data.items()) {
+        if (!StringStatMap.contains(key)) RETURN_RES("Stat '" + key + "' not found.", 404);
+        if (!StatInfos[static_cast<int>(StringStatMap.at(key))].Levelable)
+            RETURN_RES("Stat '" + key + "' canNOT be leveled.", 400);
+        totalCost += value.get<int>();
+    }
+    if (totalCost == 0) RETURN_RES("No valid stats to level.", 400);
+    if (totalCost > mon->GetStatDict()->Get(Stat::SkillPoints)) RETURN_RES("Not enough skill-points.", 400);
+
+    for (const auto &[key, value]: data.items()) {
+        const int count = value.get<int>();
+        for (int i = 0; i < count; i++)
+            if (!mon->GetStatDict()->TryLevel(StringStatMap.at(key), &err)) RETURN_RES(err, 400);
+    }
+    mon->Reset();
+    memory->Save(player);
+    res.status = 205;
 }
 
 void GameServer::ViewMonster(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID", "monster_ID");
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+    const auto team = player->TryGetTeam(std::stoi(req.get_param_value("team_ID")), &err);
+    if (!team) RETURN_RES(err, 404);
+    const auto mon = team->TryGetMonster(std::stoi(req.get_param_value("monster_ID")), &err);
+    if (!mon) RETURN_RES(err, 404);
+    RETURN_RES(mon->ToJson().dump(), 200);
+}
+
+void GameServer::CreateFightRequest(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+    const int teamID = std::stoi(req.get_param_value("team_ID"));
+    const auto team = memory->TryGetTeam(teamID, &err);
+    if (!team || !player->TryGetTeam(teamID, &err)) RETURN_RES(err, 404);
+    if (!memory->TryOpenFightRequest(team, &err)) RETURN_RES(err, 403);
+    res.status = 201;
+}
+
+void GameServer::GetFightRequests(const Request &req, Response &res) {
+    memory->CleanFightRequests();
+    RETURN_RES(memory->GetFightRequests().dump(), 200);
+}
+
+void GameServer::RetractFightRequest(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("team_ID")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+    const int teamID = std::stoi(req.get_param_value("team_ID"));
+    const auto team = memory->TryGetTeam(teamID, &err);
+    if (!team || !player->TryGetTeam(teamID, &err)) RETURN_RES(err, 404);
+    memory->RetractFightRequest(team, &err);
+    res.status = 204;
+}
+
+void GameServer::StartFight(const Request &req, Response &res) {
+    SESSION_ID
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+
+    nlohmann::json data;
+    try { data = nlohmann::json::parse(req.body); } catch (...) RETURN_RES("Invalid inputs", 400);
+
+    std::vector<int> teamIDs;
+    for (const auto &id: data) teamIDs.push_back(id.get<int>());
+    bool playerOwnedTeamFound = false;
+    for (const int id: teamIDs) {
+        if (!player->TryGetTeam(id)) continue;
+        playerOwnedTeamFound = true;
+        break;
+    }
+    if (!playerOwnedTeamFound) RETURN_RES("You must own at least one team in the fight.", 403);
+
+    const int fightID = memory->TryCreateFight(teamIDs, &err);
+    if (fightID == -1) RETURN_RES(err, 400);
+
+    memory->CleanFightRequests();
+    RETURN_RES(std::to_string(fightID), 201);
+}
+
+void GameServer::ViewFight(const Request &req, Response &res) {
+    REQUIRE_PARAMS("fight_ID")
+    std::string err;
+    const auto fight = memory->TryGetFight(std::stoi(req.get_param_value("fight_ID")), &err);
+    if (!fight) RETURN_RES(err, 404);
+    RETURN_RES(fight->ToJson().dump(), 200);
+}
+
+void GameServer::SubmitFightAction(const Request &req, Response &res) {
+    SESSION_ID
+    REQUIRE_PARAMS("fight_ID", "team_ID", "attacker_ID", "defender_ID")
+    std::string err;
+    const auto player = memory->TryGetPlayer(sessionID, &err);
+    if (!player) RETURN_RES(err, 404);
+    const auto team = player->TryGetTeam(std::stoi(req.get_param_value("team_ID")), &err);
+    if (!team) RETURN_RES(err, 404);
+    const auto fight = memory->TryGetFight(std::stoi(req.get_param_value("fight_ID")), &err);
+    if (!fight) RETURN_RES(err, 404);
+    const int attackerID = std::stoi(req.get_param_value("attacker_ID"));
+    const int defenderID = std::stoi(req.get_param_value("defender_ID"));
+    if (!fight->TryTakeTurn(team, attackerID, defenderID, &err)) RETURN_RES(err, 400);
+    res.status = 205;
 }
 
 void GameServer::Run() {
