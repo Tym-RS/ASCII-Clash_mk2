@@ -312,9 +312,10 @@ void GameServer::StartFight(const Request &req, Response &res) {
 void GameServer::ViewFight(const Request &req, Response &res) {
     REQUIRE_PARAMS("fight_ID")
     std::string err;
-    const auto fight = memory->TryGetFight(std::stoi(req.get_param_value("fight_ID")), &err);
-    if (!fight) RETURN_RES(err, 404);
-    RETURN_RES(fight->ToJson().dump(), 200);
+    const int fightID = std::stoi(req.get_param_value("fight_ID"));
+    const auto fightJ = memory->TryGetFightJson(fightID, &err);
+    if (fightJ.empty()) RETURN_RES(err, 404);
+    RETURN_RES(fightJ.dump(), 200);
 }
 
 void GameServer::SubmitFightAction(const Request &req, Response &res) {

@@ -10,9 +10,9 @@ public:
 
 protected:
     void AttackImpl(Monster *target) override {
-        BaseReceiveAttack(target);
+        BaseAttack(target);
         const float headbuttRatio = SoftRatio(GetStatDict()->Get(Stat::Special), specialCounter);
-        TryLog(Name + " has a " + std::to_string(static_cast<int>(headbuttRatio)) + "% headbutt chance.", LType::Nerdy);
+        TryLog(Name + " has a " + std::to_string(headbuttRatio * 100.0) + "% headbutt chance.", LType::Nerdy);
         if (headbuttRatio < RandomPCT()) return;
         TryLog(Name + " headbutts " + target->Name + ", hurting both!", LType::Major);
         TakeDamage(headbuttDamage);

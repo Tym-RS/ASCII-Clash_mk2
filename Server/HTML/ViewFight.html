@@ -1,622 +1,825 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASCII Clash — Fight</title>
-  <link rel="stylesheet" href="/style.css">
-  <style>
-    /* ── Winner banner ── */
-    .winner-banner {
-      border: 2px solid var(--green);
-      background: rgba(0, 255, 65, 0.06);
-      text-align: center;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Clash — Fight</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        /* ── Winner banner ── */
+        .winner-banner {
+            border: 2px solid var(--green);
+            background: rgba(0, 255, 65, 0.06);
+            text-align: center;
+            padding: 1.1rem;
+            margin-bottom: 0.85rem;
+        }
 
-    .winner-title {
-      font-size: 0.8rem;
-      color: var(--green);
-      margin-bottom: 0.4rem;
-      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-    }
+        .winner-banner.defeat {
+            border-color: var(--red);
+            background: rgba(255, 68, 68, 0.04);
+        }
 
-    .winner-sub {
-      font-size: 0.42rem;
-      color: var(--dim);
-      animation: blink 1.3s step-end infinite;
-    }
+        .winner-title {
+            font-size: 0.8rem;
+            color: var(--green);
+            text-shadow: 0 0 12px rgba(0, 255, 65, 0.6);
+            margin-bottom: 0.45rem;
+        }
 
-    /* ── Turn indicator ── */
-    .turn-indicator {
-      font-size: 0.45rem;
-      color: var(--dim);
-      text-align: center;
-      padding: 0.5rem;
-      margin-bottom: 0.75rem;
-      border: 1px solid rgba(0, 122, 31, 0.25);
-    }
+        .winner-banner.defeat .winner-title {
+            color: var(--red);
+            text-shadow: 0 0 12px rgba(255, 68, 68, 0.5);
+        }
 
-    .turn-indicator.your-turn {
-      color: var(--green);
-      border-color: var(--green);
-      animation: blink 1s step-end infinite;
-    }
+        .winner-sub {
+            font-size: 0.4rem;
+            color: var(--dim);
+            animation: blink 1.3s step-end infinite;
+        }
 
-    /* ── Participants ── */
-    .participants {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-    }
+        /* ── Turn bar ── */
+        .turn-bar {
+            font-size: 0.4rem;
+            color: var(--dim);
+            text-align: center;
+            padding: 0.45rem 0.5rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid rgba(0, 122, 31, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+        }
 
-    .team-block {
-      border: 2px solid var(--dim);
-      background: rgba(0, 0, 0, 0.4);
-      padding: 0.75rem;
-    }
+        .turn-bar.yours {
+            color: var(--green);
+            border-color: var(--green);
+            background: rgba(0, 255, 65, 0.03);
+            animation: blink 1s step-end infinite;
+        }
 
-    .team-block.my-team { border-color: rgba(0, 122, 31, 0.5); }
-    .team-block.active-team { border-color: var(--green); }
+        /* ── Team blocks ── */
+        .team-block {
+            border: 1px solid rgba(0, 122, 31, 0.25);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.6rem;
+            margin-bottom: 0.6rem;
+        }
 
-    .team-block-name {
-      font-size: 0.55rem;
-      color: var(--green);
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
+        .team-block.my-team {
+            border-color: rgba(0, 200, 60, 0.4);
+        }
 
-    .team-block-name.enemy { color: var(--dim); }
+        .team-block.active-team {
+            border-color: var(--green);
+        }
 
-    .autofight-toggle {
-      font-size: 0.38rem;
-      background: transparent;
-      border: 1px solid var(--dim);
-      color: var(--dim);
-      font-family: 'Press Start 2P', monospace;
-      padding: 0.2rem 0.4rem;
-      cursor: pointer;
-      min-height: 28px;
-      transition: color 0.15s, border-color 0.15s;
-    }
+        .team-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.18);
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
 
-    .autofight-toggle.on {
-      color: var(--green);
-      border-color: var(--green);
-    }
+        .team-label {
+            font-size: 0.4rem;
+            color: var(--green);
+        }
 
-    /* ── Monster row in fight ── */
-    .fight-mon-row {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.4rem 0;
-      border-bottom: 1px solid rgba(0, 122, 31, 0.1);
-      cursor: default;
-    }
+        .team-label.enemy {
+            color: var(--red);
+        }
 
-    .fight-mon-row.dead { opacity: 0.3; }
+        .team-label.enemy-idle {
+            color: var(--dim);
+        }
 
-    .fight-mon-row.selectable {
-      cursor: pointer;
-      transition: background 0.12s;
-    }
+        .autofight-toggle {
+            font-size: 0.33rem;
+            background: transparent;
+            border: 1px solid var(--dim);
+            color: var(--dim);
+            font-family: 'Press Start 2P', monospace;
+            padding: 0.18rem 0.35rem;
+            cursor: pointer;
+            min-height: 24px;
+            transition: color 0.15s, border-color 0.15s;
+        }
 
-    .fight-mon-row.selectable:hover { background: rgba(0, 122, 31, 0.06); }
+        .autofight-toggle.on {
+            color: var(--green);
+            border-color: var(--green);
+        }
 
-    .fight-mon-row.selected-atk { background: rgba(0, 255, 65, 0.1); }
-    .fight-mon-row.selected-def { background: rgba(255, 50, 50, 0.08); }
+        /* ── Monster row ── */
+        .fight-mon {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.3rem;
+            margin-bottom: 0.2rem;
+            border: 1px solid transparent;
+            position: relative;
+            transition: background 0.1s, border-color 0.1s;
+        }
 
-    .fight-mon-img {
-      width: 36px;
-      height: 36px;
-      object-fit: contain;
-      image-rendering: pixelated;
-      flex-shrink: 0;
-    }
+        .fight-mon:last-child {
+            margin-bottom: 0;
+        }
 
-    .fight-mon-info { flex: 1; min-width: 0; }
+        .fight-mon.dead {
+            opacity: 0.28;
+        }
 
-    .fight-mon-name {
-      font-size: 0.45rem;
-      color: var(--text);
-      margin-bottom: 0.2rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+        .fight-mon.selectable {
+            cursor: pointer;
+        }
 
-    .fight-mon-name.dead-name { color: var(--dim); }
+        .fight-mon.selectable:hover {
+            background: rgba(0, 122, 31, 0.07);
+            border-color: rgba(0, 122, 31, 0.2);
+        }
 
-    .hp-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.35rem;
-      color: var(--dim);
-      margin-bottom: 0.15rem;
-    }
+        /* Selected attacker — green left bar */
+        .fight-mon.is-atk {
+            background: rgba(0, 255, 65, 0.06);
+            border-color: rgba(0, 255, 65, 0.5);
+            box-shadow: inset 3px 0 0 var(--green);
+        }
 
-    .progress-bar {
-      height: 5px;
-      background: rgba(0, 122, 31, 0.15);
-      border: 1px solid rgba(0, 122, 31, 0.25);
-    }
+        /* Selected defender — red left bar */
+        .fight-mon.is-def {
+            background: rgba(255, 68, 68, 0.06);
+            border-color: rgba(255, 68, 68, 0.5);
+            box-shadow: inset 3px 0 0 var(--red);
+        }
 
-    .progress-fill { height: 100%; background: var(--green); transition: width 0.3s ease; }
-    .progress-fill.low  { background: #ffe000; }
-    .progress-fill.crit { background: var(--red); }
+        @keyframes sel-flash {
+            0% {
+                opacity: 1;
+            }
+            35% {
+                opacity: 0.45;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
 
-    /* ── Action panel ── */
-    .action-panel {
-      border: 2px solid var(--green);
-      background: rgba(0, 122, 31, 0.04);
-      padding: 0.85rem;
-      margin-bottom: 1rem;
-    }
+        .fight-mon.flash {
+            animation: sel-flash 0.22s ease;
+        }
 
-    .action-title {
-      font-size: 0.45rem;
-      color: var(--green);
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 1px solid rgba(0, 122, 31, 0.3);
-    }
+        .fight-mon-img {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            flex-shrink: 0;
+        }
 
-    .action-hint {
-      font-size: 0.38rem;
-      color: var(--dim);
-      margin-bottom: 0.5rem;
-    }
+        .fight-mon-info {
+            flex: 1;
+            min-width: 0;
+        }
 
-    .msg-error { margin-bottom: 0.5rem; }
+        .fight-mon-name {
+            font-size: 0.4rem;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.18rem;
+        }
 
-    /* ── Log ── */
-    .log-section {
-      margin-top: 1rem;
-    }
+        .fight-mon-name.dead {
+            color: var(--dim);
+        }
 
-    .log-controls {
-      display: flex;
-      gap: 0.4rem;
-      margin-bottom: 0.6rem;
-      flex-wrap: wrap;
-    }
+        .hp-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.3rem;
+            color: var(--dim);
+            margin-bottom: 0.1rem;
+        }
 
-    .log-toggle {
-      background: transparent;
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.38rem;
-      border: 1px solid var(--dim);
-      color: var(--dim);
-      padding: 0.3rem 0.5rem;
-      cursor: pointer;
-      min-height: 32px;
-      transition: color 0.15s, border-color 0.15s;
-    }
+        .hp-bar {
+            height: 4px;
+            background: rgba(0, 122, 31, 0.1);
+            border: 1px solid rgba(0, 122, 31, 0.2);
+        }
 
-    .log-toggle.on { color: var(--green); border-color: var(--green); }
+        .hp-fill {
+            height: 100%;
+            background: var(--green);
+            transition: width 0.3s ease;
+        }
 
-    .log-list { display: flex; flex-direction: column; gap: 0.35rem; }
+        .hp-fill.low {
+            background: #ffe000;
+        }
 
-    /* ── Log turn (collapsible) ── */
-    .log-turn {
-      border: 1px solid rgba(0, 122, 31, 0.2);
-      background: rgba(0, 0, 0, 0.3);
-    }
+        .hp-fill.crit {
+            background: var(--red);
+        }
 
-    .log-turn-header {
-      padding: 0.45rem 0.6rem;
-      font-size: 0.42rem;
-      color: var(--text);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: background 0.12s;
-      user-select: none;
-    }
+        /* Badge shown on selected row */
+        .sel-badge {
+            font-size: 0.3rem;
+            padding: 0.1rem 0.28rem;
+            flex-shrink: 0;
+            display: none;
+            white-space: nowrap;
+        }
 
-    .log-turn-header:hover { background: rgba(0, 122, 31, 0.06); }
+        .fight-mon.is-atk .sel-badge-atk {
+            display: block;
+            color: #000;
+            background: var(--green);
+        }
 
-    .log-turn-arrow {
-      font-size: 0.38rem;
-      color: var(--dim);
-      flex-shrink: 0;
-      transition: transform 0.15s;
-    }
+        .fight-mon.is-def .sel-badge-def {
+            display: block;
+            color: #fff;
+            background: var(--red);
+        }
 
-    .log-turn-arrow.open { transform: rotate(90deg); }
+        /* ── Action panel ── */
+        .action-panel {
+            border: 1px solid var(--green);
+            background: rgba(0, 122, 31, 0.03);
+            padding: 0.7rem;
+            margin-bottom: 0.75rem;
+        }
 
-    .log-turn-body {
-      display: none;
-      border-top: 1px solid rgba(0, 122, 31, 0.15);
-      padding: 0.4rem 0.6rem;
-    }
+        .action-title {
+            font-size: 0.4rem;
+            color: var(--green);
+            margin-bottom: 0.55rem;
+        }
 
-    .log-turn-body.open { display: block; }
+        /* Two-slot summary */
+        .sel-summary {
+            display: flex;
+            gap: 0.4rem;
+            margin-bottom: 0.55rem;
+        }
 
-    .log-detail {
-      font-size: 0.38rem;
-      color: var(--dim);
-      padding: 0.2rem 0;
-      border-bottom: 1px solid rgba(0, 122, 31, 0.07);
-      line-height: 1.8;
-    }
+        .sel-slot {
+            flex: 1;
+            border: 1px solid rgba(0, 122, 31, 0.2);
+            padding: 0.3rem 0.4rem;
+            background: rgba(0, 0, 0, 0.25);
+            min-width: 0;
+            transition: border-color 0.15s;
+        }
 
-    .log-detail.minor { color: rgba(0, 200, 50, 0.6); }
-    .log-detail.nerdy { color: rgba(0, 150, 50, 0.45); }
-    .log-detail.hidden { display: none; }
-  </style>
+        .sel-slot.set-atk {
+            border-color: rgba(0, 255, 65, 0.45);
+        }
+
+        .sel-slot.set-def {
+            border-color: rgba(255, 68, 68, 0.45);
+        }
+
+        .sel-slot-lbl {
+            font-size: 0.3rem;
+            color: var(--dim);
+            margin-bottom: 0.12rem;
+        }
+
+        .sel-slot-val {
+            font-size: 0.38rem;
+            color: rgba(0, 122, 31, 0.45);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sel-slot-val.set {
+        }
+
+        .sel-slot-val.set.atk {
+            color: var(--green);
+        }
+
+        .sel-slot-val.set.def {
+            color: var(--red);
+        }
+
+        .msg-error {
+            margin-bottom: 0.5rem;
+        }
+
+        /* ── Log section ── */
+        .log-section {
+            margin-top: 0.75rem;
+        }
+
+        .log-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .log-ctrl-lbl {
+            font-size: 0.33rem;
+            color: rgba(0, 122, 31, 0.5);
+            margin-right: auto;
+        }
+
+        .log-toggle {
+            background: transparent;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.3rem;
+            border: 1px solid rgba(0, 122, 31, 0.25);
+            color: rgba(0, 122, 31, 0.4);
+            padding: 0.22rem 0.4rem;
+            cursor: pointer;
+            min-height: 26px;
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .log-toggle.on {
+            color: var(--green);
+            border-color: var(--green);
+        }
+
+        .log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .log-turn {
+            border: 1px solid rgba(0, 122, 31, 0.15);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .log-turn-hdr {
+            padding: 0.38rem 0.5rem;
+            font-size: 0.36rem;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            user-select: none;
+            transition: background 0.1s;
+        }
+
+        .log-turn-hdr:hover {
+            background: rgba(0, 122, 31, 0.05);
+        }
+
+        .log-arrow {
+            font-size: 0.32rem;
+            color: var(--dim);
+            flex-shrink: 0;
+            transition: transform 0.15s;
+        }
+
+        .log-arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .log-body {
+            display: none;
+            padding: 0.28rem 0.5rem 0.4rem;
+            border-top: 1px solid rgba(0, 122, 31, 0.1);
+        }
+
+        .log-body.open {
+            display: block;
+        }
+
+        .log-entry {
+            font-size: 0.34rem;
+            padding: 0.15rem 0;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.05);
+            line-height: 1.7;
+        }
+
+        /* Importance styling */
+        .log-entry.major {
+            color: var(--text);
+        }
+
+        .log-entry.minor {
+            color: rgba(0, 200, 55, 0.65);
+        }
+
+        .log-entry.nerdy {
+            color: rgba(0, 140, 45, 0.4);
+            font-size: 0.31rem;
+        }
+
+        /* Sub-entries indented */
+        .log-entry.sub {
+            padding-left: 0.7rem;
+        }
+
+        .log-entry.hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-  <a href="/Play.html" class="nav-back">◀ BACK</a>
-  <div id="loadingMsg" class="loading">loading...</div>
-  <div id="content" style="display:none"></div>
+    <a href="/Play.html" class="nav-back">◀ BACK</a>
+    <div id="loadingMsg" class="loading">loading...</div>
+    <div id="content" style="display:none"></div>
 </div>
 
 <script src="/utils.js"></script>
 <script>
-  const params  = new URLSearchParams(location.search);
-  const fightID = params.get('fight_id');
-  const teamID  = parseInt(params.get('team_id'));
-  if (!fightID || !teamID) location.href = '/Play.html';
+    const params = new URLSearchParams(location.search);
+    const fightID = params.get('fight_id');
+    const teamID = parseInt(params.get('team_id'));
+    if (!fightID || !teamID) location.href = '/Play.html';
 
-  let pollCount   = 0;
-  let pollTimer   = null;
-  let showMinor   = true;
-  let showNerdy   = false;
-  let selectedAtk = null;
-  let selectedDef = null;
-  let fightData   = null;
+    let pollCount = 0;
+    let pollTimer = null;
+    let showMinor = true;
+    let showNerdy = false;
+    let selectedAtk = null;   // number | null  (null = nothing selected)
+    let selectedDef = null;
+    let atkName = null;
+    let defName = null;
 
-  // ── Polling ───────────────────────────────────────────
-  function getInterval() {
-    if (pollCount < 10) return 1000;
-    if (pollCount < 20) return 5000;
-    return 10000;
-  }
-
-  function schedulePoll() {
-    clearTimeout(pollTimer);
-    pollTimer = setTimeout(fetchAndRender, getInterval());
-  }
-
-  async function fetchAndRender() {
-    pollCount++;
-    const res = await postForm('/ViewFight', { fight_ID: fightID });
-    if (!res || !res.ok) { schedulePoll(); return; }
-    fightData = await res.json();
-
-    document.getElementById('loadingMsg').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-
-    render(fightData);
-
-    if (!fightData.is_ongoing) {
-      clearTimeout(pollTimer);
-      return;
+    // ── Polling ───────────────────────────────────────────
+    function getInterval() {
+        if (pollCount < 10) return 1500;
+        if (pollCount < 20) return 4000;
+        return 8000;
     }
 
-    // Only poll if it's not our turn
-    const myTeam = fightData.participants.find(t => t.ID === teamID);
-    const isMyTurn = myTeam && fightData.active_team_name === myTeam.name;
-    if (!isMyTurn) schedulePoll();
-  }
-
-  // ── Render ────────────────────────────────────────────
-  function render(fight) {
-    const content = document.getElementById('content');
-    content.innerHTML = '';
-
-    // Winner banner
-    if (!fight.is_ongoing && fight.winner) {
-      const isWinner = fight.winner.ID === teamID;
-      const banner = document.createElement('div');
-      banner.className = 'winner-banner';
-      banner.innerHTML = `
-          <div class="winner-title">${isWinner ? '>> YOU WIN! <<' : fight.winner.Name + ' WINS'}</div>
-          <div class="winner-sub">${isWinner ? 'VICTORY' : 'DEFEAT'}</div>
-        `;
-      content.appendChild(banner);
-    } else if (!fight.is_ongoing) {
-      // Draw
-      const banner = document.createElement('div');
-      banner.className = 'winner-banner';
-      banner.innerHTML = `<div class="winner-title">-- DRAW --</div>`;
-      content.appendChild(banner);
+    function schedulePoll() {
+        clearTimeout(pollTimer);
+        pollTimer = setTimeout(fetchAndRender, getInterval());
     }
 
-    // Turn indicator
-    const myTeam   = fight.participants.find(t => t.ID === teamID);
-    const isMyTurn = myTeam && fight.is_ongoing && fight.active_team_name === myTeam.name;
+    async function fetchAndRender() {
+        pollCount++;
+        const res = await postForm('/ViewFight', {fight_ID: fightID});
+        if (!res || !res.ok) {
+            schedulePoll();
+            return;
+        }
+        const fight = await res.json();
 
-    const turnEl = document.createElement('div');
-    turnEl.className = 'turn-indicator' + (isMyTurn ? ' your-turn' : '');
-    turnEl.textContent = isMyTurn
-            ? '>> YOUR TURN <<'
-            : '> ' + fight.active_team_name + "'s turn";
-    content.appendChild(turnEl);
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
 
-    // Participants
-    const parts = document.createElement('div');
-    parts.className = 'participants';
+        render(fight);
 
-    fight.participants.forEach(team => {
-      const isMe     = team.ID === teamID;
-      const isActive = team.name === fight.active_team_name;
-
-      const block = document.createElement('div');
-      block.className = 'team-block'
-              + (isMe     ? ' my-team'     : '')
-              + (isActive ? ' active-team' : '');
-
-      const nameRow = document.createElement('div');
-      nameRow.className = 'team-block-name' + (isMe ? '' : ' enemy');
-      nameRow.innerHTML = `<span>${team.name}${isMe ? ' (you)' : ''}</span>`;
-
-      // AutoFight toggle for own team only
-      if (isMe && fight.is_ongoing) {
-        const af = document.createElement('button');
-        af.className   = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
-        af.textContent = 'AUTO: ' + (team.auto_fight ? 'ON' : 'OFF');
-        af.addEventListener('click', async () => {
-          const newVal = team.auto_fight ? 0 : 1;
-          const res = await postForm('/SetAutoFight', { team_ID: teamID, set_to: newVal });
-          if (res && res.ok) {
-            team.auto_fight = newVal === 1;
-            af.className   = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
-            af.textContent = 'AUTO: ' + (team.auto_fight ? 'ON' : 'OFF');
-          }
-        });
-        nameRow.appendChild(af);
-      }
-
-      block.appendChild(nameRow);
-
-      // Monster rows
-      team.monsters.forEach(mon => {
-        if (!mon) return;
-        const alive  = mon.current_health > 0;
-        const maxHP  = mon.stats.Health;
-        const curHP  = mon.current_health;
-        const hpPct  = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
-        const fillCls = hpPct <= 25 ? 'crit' : hpPct <= 50 ? 'low' : '';
-
-        const row = document.createElement('div');
-        row.className  = 'fight-mon-row' + (alive ? '' : ' dead');
-        row.dataset.id = mon.ID;
-
-        row.innerHTML = `
-            <img class="fight-mon-img"
-                 src="/images/${encodeURIComponent(mon.type)}.png"
-                 alt="${mon.type}"
-                 onerror="this.src='/images/NA.png'">
-            <div class="fight-mon-info">
-              <div class="fight-mon-name${alive ? '' : ' dead-name'}">${mon.name}</div>
-              <div class="hp-label">
-                <span>HP</span><span>${curHP} / ${maxHP}</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill ${fillCls}" style="width:${hpPct}%"></div>
-              </div>
-            </div>
-          `;
-
-        // Selection for action panel
-        if (isMyTurn && alive) {
-          if (isMe) {
-            row.classList.add('selectable');
-            row.addEventListener('click', () => selectAttacker(mon.ID, block));
-          } else {
-            row.classList.add('selectable');
-            row.addEventListener('click', () => selectDefender(mon.ID, block));
-          }
+        if (!fight.is_ongoing) {
+            clearTimeout(pollTimer);
+            return;
         }
 
-        block.appendChild(row);
-      });
-
-      parts.appendChild(block);
-    });
-
-    content.appendChild(parts);
-
-    // Action panel (only when it's our turn)
-    if (isMyTurn) {
-      const panel = document.createElement('div');
-      panel.className = 'action-panel';
-      panel.innerHTML = `
-          <div class="action-title">YOUR TURN</div>
-          <div class="action-hint">Select attacker from your team, then a target.</div>
-          <div class="msg-error" id="actionErr"></div>
-          <button class="btn-primary" id="btnSubmit" disabled>[ SUBMIT ]</button>
-        `;
-      content.appendChild(panel);
-      wireSubmit(panel);
+        const myTeam = fight.participants.find(t => t.ID === teamID);
+        const isMyTurn = myTeam && fight.active_team_name === myTeam.name;
+        if (!isMyTurn) schedulePoll();
     }
 
-    // Log
-    renderLog(content, fight.log);
-  }
+    // ── Render ────────────────────────────────────────────
+    function render(fight) {
+        const content = document.getElementById('content');
+        content.innerHTML = '';
 
-  // ── Monster selection ─────────────────────────────────
-  function selectAttacker(id, block) {
-    document.querySelectorAll('.fight-mon-row').forEach(r => r.classList.remove('selected-atk'));
-    const row = block.querySelector(`[data-id="${id}"]`);
-    if (row) row.classList.add('selected-atk');
-    selectedAtk = id;
-    updateSubmitBtn();
-  }
-
-  function selectDefender(id, block) {
-    document.querySelectorAll('.fight-mon-row').forEach(r => r.classList.remove('selected-def'));
-    const row = block.querySelector(`[data-id="${id}"]`);
-    if (row) row.classList.add('selected-def');
-    selectedDef = id;
-    updateSubmitBtn();
-  }
-
-  function updateSubmitBtn() {
-    const btn = document.getElementById('btnSubmit');
-    if (btn) btn.disabled = !(selectedAtk && selectedDef);
-  }
-
-  // ── Submit action ─────────────────────────────────────
-  function wireSubmit(panel) {
-    panel.querySelector('#btnSubmit').addEventListener('click', async () => {
-      const errBox = document.getElementById('actionErr');
-      hideMsg(errBox);
-      if (!selectedAtk || !selectedDef) return;
-
-      const btn = panel.querySelector('#btnSubmit');
-      btn.disabled = true;
-
-      const res = await postForm('/SubmitFightAction', {
-        fight_ID:    fightID,
-        team_ID:     teamID,
-        attacker_ID: selectedAtk,
-        defender_ID: selectedDef,
-      });
-
-      if (!res || !res.ok) {
-        const msg = res ? await res.text() : 'Request failed';
-        showError(errBox, msg);
-        btn.disabled = false;
-        return;
-      }
-
-      selectedAtk = null;
-      selectedDef = null;
-      pollCount   = 0;
-      await fetchAndRender();
-    });
-  }
-
-  // ── Log rendering ─────────────────────────────────────
-  function renderLog(parent, log) {
-    const section = document.createElement('div');
-    section.className = 'log-section';
-
-    const sectionLabel = document.createElement('div');
-    sectionLabel.className = 'section-label';
-    sectionLabel.textContent = 'Fight Log';
-    section.appendChild(sectionLabel);
-
-    // Toggle controls
-    const controls = document.createElement('div');
-    controls.className = 'log-controls';
-
-    const toggleMinor = document.createElement('button');
-    toggleMinor.className  = 'log-toggle' + (showMinor ? ' on' : '');
-    toggleMinor.textContent = 'MINOR: ' + (showMinor ? 'ON' : 'OFF');
-    toggleMinor.addEventListener('click', () => {
-      showMinor = !showMinor;
-      toggleMinor.className  = 'log-toggle' + (showMinor ? ' on' : '');
-      toggleMinor.textContent = 'MINOR: ' + (showMinor ? 'ON' : 'OFF');
-      refreshLogVisibility();
-    });
-
-    const toggleNerdy = document.createElement('button');
-    toggleNerdy.className  = 'log-toggle' + (showNerdy ? ' on' : '');
-    toggleNerdy.textContent = 'NERDY: ' + (showNerdy ? 'ON' : 'OFF');
-    toggleNerdy.addEventListener('click', () => {
-      showNerdy = !showNerdy;
-      toggleNerdy.className  = 'log-toggle' + (showNerdy ? ' on' : '');
-      toggleNerdy.textContent = 'NERDY: ' + (showNerdy ? 'ON' : 'OFF');
-      refreshLogVisibility();
-    });
-
-    controls.appendChild(toggleMinor);
-    controls.appendChild(toggleNerdy);
-    section.appendChild(controls);
-
-    // Turns (newest last)
-    const list = document.createElement('div');
-    list.id        = 'logList';
-    list.className = 'log-list';
-
-    if (!log || !log.turns || log.turns.length === 0) {
-      list.innerHTML = '<div style="font-size:0.42rem;color:var(--dim);padding:0.5rem 0">No log entries yet.</div>';
-    } else {
-      log.turns.forEach((turn, i) => {
-        const turnEl = document.createElement('div');
-        turnEl.className = 'log-turn';
-
-        const header = document.createElement('div');
-        header.className = 'log-turn-header';
-        header.innerHTML = `
-            <span class="log-turn-arrow">▶</span>
-            <span>Turn ${i + 1}: ${turn.header}</span>
-          `;
-
-        const body = document.createElement('div');
-        body.className = 'log-turn-body';
-
-        if (turn.details && turn.details.length > 0) {
-          turn.details.forEach(detail => {
-            const imp = detail.importance ? detail.importance.toLowerCase() : 'minor';
-            const el  = document.createElement('div');
-            el.className    = 'log-detail ' + imp;
-            el.textContent  = detail.header;
-            el.dataset.importance = imp;
-            body.appendChild(el);
-
-            // Nested details (Nerdy sub-entries)
-            if (detail.details && detail.details.length > 0) {
-              detail.details.forEach(sub => {
-                const subImp = sub.importance ? sub.importance.toLowerCase() : 'nerdy';
-                const subEl  = document.createElement('div');
-                subEl.className    = 'log-detail ' + subImp;
-                subEl.textContent  = '  > ' + sub.header;
-                subEl.dataset.importance = subImp;
-                body.appendChild(subEl);
-              });
+        // ── Winner / draw banner ──
+        if (!fight.is_ongoing) {
+            const banner = document.createElement('div');
+            if (fight.winner) {
+                const won = fight.winner.ID === teamID;
+                banner.className = 'winner-banner' + (won ? '' : ' defeat');
+                banner.innerHTML = `
+          <div class="winner-title">${won ? '>> YOU WIN! <<' : fight.winner.Name + ' WINS'}</div>
+          <div class="winner-sub">${won ? 'VICTORY' : 'DEFEAT'}</div>`;
+            } else {
+                banner.className = 'winner-banner';
+                banner.innerHTML = `<div class="winner-title">-- DRAW --</div>`;
             }
-          });
+            content.appendChild(banner);
         }
 
-        header.addEventListener('click', () => {
-          const isOpen = body.classList.toggle('open');
-          header.querySelector('.log-turn-arrow').classList.toggle('open', isOpen);
+        // ── Turn bar ──
+        const myTeam = fight.participants.find(t => t.ID === teamID);
+        const isMyTurn = myTeam && fight.is_ongoing && fight.active_team_name === myTeam.name;
+
+        const turnBar = document.createElement('div');
+        turnBar.className = 'turn-bar' + (isMyTurn ? ' yours' : '');
+        turnBar.textContent = isMyTurn ? '>> YOUR TURN <<' : fight.active_team_name + "'s turn";
+        content.appendChild(turnBar);
+
+        // ── Teams ──
+        fight.participants.forEach(team => {
+            const isMe = team.ID === teamID;
+            const isActive = team.name === fight.active_team_name;
+
+            const block = document.createElement('div');
+            block.className = 'team-block' + (isMe ? ' my-team' : '') + (isActive ? ' active-team' : '');
+
+            // Header
+            const hdr = document.createElement('div');
+            hdr.className = 'team-header';
+
+            const lbl = document.createElement('span');
+            if (isMe) {
+                lbl.className = 'team-label';
+                lbl.textContent = team.name + ' (you)';
+            } else if (isActive) {
+                lbl.className = 'team-label enemy';
+                lbl.textContent = team.name;
+            } else {
+                lbl.className = 'team-label enemy-idle';
+                lbl.textContent = team.name;
+            }
+            hdr.appendChild(lbl);
+
+            if (isMe && fight.is_ongoing) {
+                const af = document.createElement('button');
+                af.className = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
+                af.textContent = 'AUTO: ' + (team.auto_fight ? 'ON' : 'OFF');
+                af.addEventListener('click', async () => {
+                    const nv = team.auto_fight ? 0 : 1;
+                    const r = await postForm('/SetAutoFight', {team_ID: teamID, set_to: nv});
+                    if (r && r.ok) {
+                        team.auto_fight = nv === 1;
+                        af.className = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
+                        af.textContent = 'AUTO: ' + (team.auto_fight ? 'ON' : 'OFF');
+                    }
+                });
+                hdr.appendChild(af);
+            }
+            block.appendChild(hdr);
+
+            // Monsters
+            team.monsters.forEach(mon => {
+                if (!mon) return;
+                const alive = mon.current_health > 0;
+                const maxHP = mon.stats.Health;
+                const curHP = mon.current_health;
+                const hpPct = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
+                const fillCls = hpPct <= 25 ? 'crit' : hpPct <= 50 ? 'low' : '';
+
+                const row = document.createElement('div');
+                row.className = 'fight-mon' + (alive ? '' : ' dead');
+                row.dataset.id = mon.ID;
+                row.dataset.name = mon.name;
+
+                // Restore saved selection highlights across re-renders
+                if (mon.ID === selectedAtk) row.classList.add('is-atk');
+                if (mon.ID === selectedDef) row.classList.add('is-def');
+
+                row.innerHTML = `
+          <img class="fight-mon-img"
+               src="/images/${encodeURIComponent(mon.type)}.png"
+               alt="${mon.type}"
+               onerror="this.src='/images/NA.png'">
+          <div class="fight-mon-info">
+            <div class="fight-mon-name${alive ? '' : ' dead'}">${mon.name}</div>
+            <div class="hp-row"><span>HP</span><span>${curHP} / ${maxHP}</span></div>
+            <div class="hp-bar"><div class="hp-fill ${fillCls}" style="width:${hpPct}%"></div></div>
+          </div>
+          <span class="sel-badge sel-badge-atk">ATK</span>
+          <span class="sel-badge sel-badge-def">TGT</span>`;
+
+                if (isMyTurn && alive) {
+                    row.classList.add('selectable');
+                    if (isMe) {
+                        row.addEventListener('click', () => pickAttacker(mon.ID, mon.name));
+                    } else {
+                        row.addEventListener('click', () => pickDefender(mon.ID, mon.name));
+                    }
+                }
+
+                block.appendChild(row);
+            });
+
+            content.appendChild(block);
         });
 
-        // Auto-expand latest turn
-        if (i === log.turns.length - 1) {
-          body.classList.add('open');
-          header.querySelector('.log-turn-arrow').classList.add('open');
-        }
+        // ── Action panel (my turn only) ──
+        if (isMyTurn) content.appendChild(buildActionPanel());
 
-        turnEl.appendChild(header);
-        turnEl.appendChild(body);
-        list.appendChild(turnEl);
-      });
+        // ── Fight log ──
+        renderLog(content, fight.log);
     }
 
-    section.appendChild(list);
-    parent.appendChild(section);
+    // ── Selection helpers ─────────────────────────────────
+    function pickAttacker(id, name) {
+        selectedAtk = id;
+        atkName = name;
+        document.querySelectorAll('.fight-mon').forEach(r => {
+            r.classList.remove('is-atk');
+            if (parseInt(r.dataset.id) === id) flash(r, 'is-atk');
+        });
+        syncActionPanel();
+    }
 
-    refreshLogVisibility();
-  }
+    function pickDefender(id, name) {
+        selectedDef = id;
+        defName = name;
+        document.querySelectorAll('.fight-mon').forEach(r => {
+            r.classList.remove('is-def');
+            if (parseInt(r.dataset.id) === id) flash(r, 'is-def');
+        });
+        syncActionPanel();
+    }
 
-  function refreshLogVisibility() {
-    document.querySelectorAll('.log-detail').forEach(el => {
-      const imp = el.dataset.importance;
-      let visible = true;
-      if (imp === 'minor' && !showMinor) visible = false;
-      if (imp === 'nerdy' && !showNerdy) visible = false;
-      el.classList.toggle('hidden', !visible);
-    });
-  }
+    function flash(el, cls) {
+        el.classList.add(cls);
+        el.classList.remove('flash');
+        void el.offsetWidth;
+        el.classList.add('flash');
+        el.addEventListener('animationend', () => el.classList.remove('flash'), {once: true});
+    }
 
-  // ── Start ─────────────────────────────────────────────
-  fetchAndRender();
+    // ── Action panel ─────────────────────────────────────
+    function buildActionPanel() {
+        const panel = document.createElement('div');
+        panel.className = 'action-panel';
+        panel.innerHTML = `
+      <div class="action-title">YOUR TURN</div>
+      <div class="sel-summary">
+        <div class="sel-slot" id="atkSlot">
+          <div class="sel-slot-lbl">ATTACKER</div>
+          <div class="sel-slot-val" id="atkVal">---</div>
+        </div>
+        <div class="sel-slot" id="defSlot">
+          <div class="sel-slot-lbl">TARGET</div>
+          <div class="sel-slot-val" id="defVal">---</div>
+        </div>
+      </div>
+      <div class="msg-error" id="actionErr"></div>
+      <button class="btn-primary" id="btnSubmit" disabled>[ FIGHT ]</button>`;
+        panel.querySelector('#btnSubmit').addEventListener('click', submitAction);
+        syncActionPanel();
+        return panel;
+    }
+
+    function syncActionPanel() {
+        const atkSlot = document.getElementById('atkSlot');
+        const defSlot = document.getElementById('defSlot');
+        const atkVal = document.getElementById('atkVal');
+        const defVal = document.getElementById('defVal');
+        const btn = document.getElementById('btnSubmit');
+        if (!atkVal) return;
+
+        const hasAtk = selectedAtk !== null;
+        const hasDef = selectedDef !== null;
+
+        atkSlot.className = 'sel-slot' + (hasAtk ? ' set-atk' : '');
+        defSlot.className = 'sel-slot' + (hasDef ? ' set-def' : '');
+        atkVal.className = 'sel-slot-val' + (hasAtk ? ' set atk' : '');
+        defVal.className = 'sel-slot-val' + (hasDef ? ' set def' : '');
+        atkVal.textContent = hasAtk ? atkName : '---';
+        defVal.textContent = hasDef ? defName : '---';
+
+        // KEY FIX: use !== null so monster ID 0 works correctly
+        if (btn) btn.disabled = !(hasAtk && hasDef);
+    }
+
+    // ── Submit ────────────────────────────────────────────
+    async function submitAction() {
+        const errBox = document.getElementById('actionErr');
+        hideMsg(errBox);
+        if (selectedAtk === null || selectedDef === null) return;
+
+        const btn = document.getElementById('btnSubmit');
+        if (btn) btn.disabled = true;
+
+        const res = await postForm('/SubmitFightAction', {
+            fight_ID: fightID,
+            team_ID: teamID,
+            attacker_ID: selectedAtk,
+            defender_ID: selectedDef,
+        });
+
+        if (!res || !res.ok) {
+            const msg = res ? await res.text() : 'Request failed';
+            showError(errBox, msg);
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        // Clear selections after a successful action
+        selectedAtk = null;
+        selectedDef = null;
+        atkName = null;
+        defName = null;
+        pollCount = 0;
+        await fetchAndRender();
+    }
+
+    // ── Log rendering ─────────────────────────────────────
+    function renderLog(parent, log) {
+        const section = document.createElement('div');
+        section.className = 'log-section';
+
+        const lbl = document.createElement('div');
+        lbl.className = 'section-label';
+        lbl.textContent = 'Fight Log';
+        section.appendChild(lbl);
+
+        // Toggles
+        const controls = document.createElement('div');
+        controls.className = 'log-controls';
+
+        const ctrlLbl = document.createElement('span');
+        ctrlLbl.className = 'log-ctrl-lbl';
+        ctrlLbl.textContent = 'show:';
+        controls.appendChild(ctrlLbl);
+
+        function makeToggle(label, get, set) {
+            const btn = document.createElement('button');
+            const refresh = () => {
+                btn.className = 'log-toggle' + (get() ? ' on' : '');
+                btn.textContent = label + ': ' + (get() ? 'ON' : 'OFF');
+            };
+            btn.addEventListener('click', () => {
+                set(!get());
+                refresh();
+                refreshLogVis();
+            });
+            refresh();
+            return btn;
+        }
+
+        controls.appendChild(makeToggle('DETAILS', () => showMinor, v => showMinor = v));
+        controls.appendChild(makeToggle('NERDY', () => showNerdy, v => showNerdy = v));
+        section.appendChild(controls);
+
+        const list = document.createElement('div');
+        list.className = 'log-list';
+        list.id = 'logList';
+
+        if (!log || !log.turns || log.turns.length === 0) {
+            list.innerHTML = '<div style="font-size:0.36rem;color:var(--dim);padding:0.5rem 0">No entries yet.</div>';
+        } else {
+            log.turns.forEach((turn, i) => {
+                const isLast = (i === log.turns.length - 1);
+                const el = document.createElement('div');
+                el.className = 'log-turn';
+
+                const hdr = document.createElement('div');
+                hdr.className = 'log-turn-hdr';
+                hdr.innerHTML = `
+          <span class="log-arrow${isLast ? ' open' : ''}">▶</span>
+          <span>Turn ${i + 1}: ${turn.header}</span>`;
+
+                const body = document.createElement('div');
+                body.className = 'log-body' + (isLast ? ' open' : '');
+
+                if (turn.details && turn.details.length > 0) {
+                    addLogEntries(body, turn.details, false);
+                }
+
+                hdr.addEventListener('click', () => {
+                    const open = body.classList.toggle('open');
+                    hdr.querySelector('.log-arrow').classList.toggle('open', open);
+                });
+
+                el.appendChild(hdr);
+                el.appendChild(body);
+                list.appendChild(el);
+            });
+        }
+
+        section.appendChild(list);
+        parent.appendChild(section);
+        refreshLogVis();
+    }
+
+    function addLogEntries(parent, entries, isSub) {
+        entries.forEach(e => {
+            const imp = (e.importance || 'minor').toLowerCase();
+            const el = document.createElement('div');
+            el.className = 'log-entry ' + imp + (isSub ? ' sub' : '');
+            el.dataset.imp = imp;
+            el.textContent = (isSub ? '> ' : '') + e.header;
+            parent.appendChild(el);
+            if (e.details && e.details.length > 0) addLogEntries(parent, e.details, true);
+        });
+    }
+
+    function refreshLogVis() {
+        document.querySelectorAll('.log-entry').forEach(el => {
+            const imp = el.dataset.imp;
+            const hide = (imp === 'minor' && !showMinor) || (imp === 'nerdy' && !showNerdy);
+            el.classList.toggle('hidden', hide);
+        });
+    }
+
+    // ── Boot ──────────────────────────────────────────────
+    fetchAndRender();
 </script>
 </body>
 </html>

@@ -36,7 +36,9 @@
             margin-bottom: 0.5rem;
         }
 
-        .team-name.rejoin-name { color: #ffe000; }
+        .team-name.rejoin-name {
+            color: #ffe000;
+        }
 
         .team-meta {
             font-size: 0.4rem;
@@ -87,7 +89,9 @@
             margin-top: 0.5rem;
         }
 
-        .mode-row.visible { display: flex; }
+        .mode-row.visible {
+            display: flex;
+        }
 
         .mode-row .btn-primary {
             flex: 1;
@@ -109,7 +113,9 @@
             transition: background 0.15s;
         }
 
-        .btn-rejoin:hover { background: rgba(255, 224, 0, 0.07); }
+        .btn-rejoin:hover {
+            background: rgba(255, 224, 0, 0.07);
+        }
 
         .section-title {
             font-size: 0.45rem;
@@ -137,7 +143,10 @@
 
     async function init() {
         const res = await post('/ViewMe');
-        if (!res || !res.ok) { location.href = '/index.html'; return; }
+        if (!res || !res.ok) {
+            location.href = '/index.html';
+            return;
+        }
         const data = await res.json();
         myTeams = data.Teams.filter(t => t !== null);
         render(data.Teams);
@@ -149,7 +158,7 @@
         content.innerHTML = '';
 
         const rejoinTeams = teams.filter(t => t && t.in_fight);
-        const availTeams  = teams.filter(t => t && !t.in_fight);
+        const availTeams = teams.filter(t => t && !t.in_fight);
 
         // ── Rejoin section ──
         if (rejoinTeams.length > 0) {
@@ -164,7 +173,7 @@
             <button class="btn-rejoin">[ REJOIN FIGHT ]</button>
           `;
                 card.querySelector('.btn-rejoin').addEventListener('click', () => {
-                    location.href = '/viewFight.html?fight_id=' + t.fight_id + '&team_id=' + t.ID;
+                    location.href = '/ViewFight.html?fight_id=' + t.fight_id + '&team_id=' + t.ID;
                 });
                 sec.appendChild(card);
             });

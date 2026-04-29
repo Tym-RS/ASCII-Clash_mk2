@@ -1,4 +1,5 @@
 #include "Fight.h"
+#include "Fight.h"
 #include <string>
 #include <nlohmann/json.hpp>
 #include "Database/TableDefs.h"
@@ -12,7 +13,8 @@ inline int GetHash(const std::vector<std::shared_ptr<Team> > &teams) {
     for (const auto &p: teams)
         h ^= (std::hash<std::string>{}(p->Name) << 1);
     h ^= time(nullptr);
-    return static_cast<int>(h);
+    int id = static_cast<int>(h);
+    return id * id;
 }
 
 
@@ -21,6 +23,8 @@ Fight::Fight(const std::vector<std::shared_ptr<Team> > &teams)
     for (const auto &t: teams) t->EnterFight(ID, &log);
     turnIndex = std::rand() % fightSize;
     log.Append(ActiveTeam()->Name + " starts!", LType::Major);
+    if (!ActiveTeam()->AutoFight) return;
+    ExecuteTurn(GetRandomMonPair());
 }
 
 nlohmann::json Fight::ToJson() const {
@@ -45,18 +49,18 @@ nlohmann::json Fight::ToJson() const {
 }
 
 
-Fight Fight::FromJson(const nlohmann::json &j, const std::vector<std::shared_ptr<Team> > &teams) {
+Fight Fight::FromJson(const nlohmann::json &json, const std::vector<std::shared_ptr<Team> > &teams) {
     auto fight = Fight(teams);
-    fight.turnIndex = j.value("turn", 0);
-    if (j.contains("winner") && !j["winner"].empty()) {
-        const int winnerID = j["winner"]["ID"].get<int>();
+    fight.turnIndex = json.value("turn", 0);
+    if (json.contains("winner") && !json["winner"].empty()) {
+        const int winnerID = json["winner"]["ID"].get<int>();
         for (const auto &t: teams) {
             if (t->ID != winnerID) continue;
             fight.winner = t.get();
             break;
         }
     }
-    if (j.contains("log")) fight.log = NestedLogger::FromJson(j["log"]);
+    if (json.contains("log")) fight.log = NestedLogger::FromJson(json["log"]);
     return fight;
 }
 
@@ -86,19 +90,14 @@ bool Fight::TryTakeTurn(const Team *initiator, const int atkMonID, const int def
     return true;
 }
 
-Fight::~Fight() {
-    for (const auto &t: teams) t->ExitFight();
-}
-
-
 void Fight::ExecuteTurn(TurnPair mons) {
     do {
         log.Next(mons.attacker->Name + " attacks " + mons.defender->Name, LType::Major);
         mons.attacker->Attack(mons.defender);
 
-        for (const auto &team: teams) {
+        for (const auto &t: teams) {
             int alive = 0, total = 0, totalHP = 0, totalMaxHP = 0;
-            for (auto &m: team->Monsters()) {
+            for (const auto &m: t->Monsters()) {
                 if (!m) continue;
                 total++;
                 totalMaxHP += m->GetStatDict()->Get(Stat::Health);
@@ -107,10 +106,10 @@ void Fight::ExecuteTurn(TurnPair mons) {
                     totalHP += m->GetCurrentHealth();
                 }
             }
-            log.Append(team->Name + ": " + std::to_string(alive) + "/" + std::to_string(total) +
+            log.Append(t->Name + ": " + std::to_string(alive) + "/" + std::to_string(total) +
                        " standing, " + std::to_string(totalHP) + "/" + std::to_string(totalMaxHP) + " HP total",
                        LType::Major);
-            for (auto &m: team->Monsters()) {
+            for (const auto &m: t->Monsters()) {
                 if (!m) continue;
                 log.Append(m->Name + ": " + std::to_string(m->GetCurrentHealth()) + "/" +
                            std::to_string(m->GetStatDict()->Get(Stat::Health)) + " HP", LType::Nerdy);
@@ -118,23 +117,23 @@ void Fight::ExecuteTurn(TurnPair mons) {
         }
 
         turnIndex++;
-        UpdateWinner();
+        TryConclude();
         if (winner) {
             log.Append(winner->Name + " wins!", LType::Major);
             return;
         }
         if (turnIndex >= Config::Fight::maxTurnCount) {
-            log.Append("Draw — the fight timed out.", LType::Major);
+            log.Append("Draw — the fight timed out, no winners!", LType::Major);
             EndFight();
             return;
         }
         if (!ActiveTeam()->AutoFight) return;
-        mons = AutoPickMons();
+        mons = GetRandomMonPair();
     } while (mons.attacker && mons.defender);
 }
 
 
-Fight::TurnPair Fight::AutoPickMons() const {
+Fight::TurnPair Fight::GetRandomMonPair() const {
     //Attacking Monster
     int ran = std::rand() % Config::Team::Size;
     Monster *attacker = nullptr;
@@ -166,7 +165,7 @@ Fight::TurnPair Fight::AutoPickMons() const {
     return {attacker, defender};
 }
 
-void Fight::UpdateWinner() {
+void Fight::TryConclude() {
     Team *current = nullptr;
     for (const auto &t: teams)
         for (const auto &m: t->Monsters()) {

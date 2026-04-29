@@ -42,7 +42,7 @@ PlayerSession PlayerSession::FromJson(nlohmann::json j,
 }
 
 bool PlayerSession::CheckActive() {
-    if (lastActivity + Config::Server::SessionTimeout < time(nullptr)) return false;
+    if (lastActivity + Config::Server::SessionTimeoutS < time(nullptr)) return false;
     lastActivity = time(nullptr);
     return true;
 }

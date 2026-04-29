@@ -20,14 +20,12 @@ public:
 
     [[nodiscard]] nlohmann::json ToJson() const override;
 
-    static Fight FromJson(const nlohmann::json &j, const std::vector<std::shared_ptr<Team> > &teams);
+    static Fight FromJson(const nlohmann::json &json, const std::vector<std::shared_ptr<Team> > &teams);
 
     bool TryTakeTurn(const Team *initiator, int atkMonID, int defMonID, std::string *err = nullptr);
 
     const std::vector<std::shared_ptr<Team> > &Teams() const { return teams; }
     const int ID;
-
-    ~Fight() override;
 
 private:
     const int fightSize;
@@ -35,9 +33,9 @@ private:
 
     void ExecuteTurn(TurnPair mons);
 
-    [[nodiscard]] TurnPair AutoPickMons() const;
+    [[nodiscard]] TurnPair GetRandomMonPair() const;
 
-    void UpdateWinner();
+    void TryConclude();
 
     void EndFight() const;
 

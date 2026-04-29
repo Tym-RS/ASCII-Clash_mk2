@@ -22,6 +22,11 @@ namespace Database {
 
         [[nodiscard]] int NextID(const std::string &table) const;
 
+#ifndef NDEBUG
+        void DebugDump() const;
+#endif
+
+
         ~SaveManager();
 
     private:

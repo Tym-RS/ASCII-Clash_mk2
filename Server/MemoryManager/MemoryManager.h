@@ -9,7 +9,7 @@
 
 class MemoryManager {
 public:
-    explicit MemoryManager(Database::SaveManager *saveManager);
+    explicit MemoryManager(std::unique_ptr<Database::SaveManager> saveManager);
 
     PlayerSession *TryGetPlayer(const std::string &sessionID, ERR_PARAM);
 
@@ -27,6 +27,8 @@ public:
     std::shared_ptr<Team> GetNewAITeam(int level) const;
 
     Fight *TryGetFight(int id, ERR_PARAM);
+
+    nlohmann::json TryGetFightJson(int id, ERR_PARAM);
 
     int TryCreateFight(const std::vector<int> &teamIDs, ERR_PARAM);
 
@@ -46,8 +48,12 @@ public:
 
     void Save(const Fight *fight);
 
+#ifndef NDEBUG
+    void DebugDump();
+#endif
+
 private:
-    Database::SaveManager *saveManager;
+    std::unique_ptr<Database::SaveManager> saveManager;
 
     mutable std::recursive_mutex mtx;
 

@@ -4,7 +4,7 @@
 #include "Database/TableDefs.h"
 #include "GameLogic/Monsters/CreateMonster.h"
 
-MemoryManager::MemoryManager(Database::SaveManager *saveManager) : saveManager(saveManager) {
+MemoryManager::MemoryManager(std::unique_ptr<Database::SaveManager> saveManager) : saveManager(std::move(saveManager)) {
 }
 
 PlayerSession *MemoryManager::TryGetPlayer(const std::string &sessionID, std::string *err) {
@@ -91,6 +91,7 @@ std::shared_ptr<Team> MemoryManager::GetNewAITeam(const int level) const {
         mon->GetStatDict()->ReceiveEXP(offsetLvl * (offsetLvl + 1));
         while (mon->GetStatDict()->Get(Stat::SkillPoints) > 0)
             mon->GetStatDict()->TryLevel(static_cast<Stat>(rand() % static_cast<int>(Stat::COUNT)));
+        mon->Reset();
         (*mons)[i] = std::move(mon);
     }
     t->AutoFight = true;
@@ -101,19 +102,19 @@ Fight *MemoryManager::TryGetFight(const int id, std::string *err) {
     std::lock_guard lock(mtx);
     if (const auto it = loadedFights.find(id); it != loadedFights.end()) return it->second.get();
 
-    const auto fightJ = saveManager->LoadWhere(TABLE(Fights), {{COL(Fights, ID), std::to_string(id)}});
+    const auto fightJ = TryGetFightJson(id, err);
     if (fightJ.empty()) {
-        SET_ERR("Fight not found.");
+        SET_ERR(*err);
         return nullptr;
     }
-    if (!fightJ[0][COL(Fights, is_ongoing)].get<bool>()) {
+
+    if (!fightJ[COL(Fights, is_ongoing)].get<bool>()) {
         SET_ERR("Fight is already over.");
         Cleanup();
         return nullptr;
     }
-
     std::vector<std::shared_ptr<Team> > participants;
-    for (auto teamJ: fightJ[0][COL(Fights, participants)]) {
+    for (auto teamJ: fightJ[COL(Fights, participants)]) {
         const int teamID = teamJ[COL(Teams, ID)].get<int>();
         std::shared_ptr<Team> team = nullptr;
         team = TryGetTeam(teamJ[COL(Teams, ID)].get<int>(), err);
@@ -127,8 +128,18 @@ Fight *MemoryManager::TryGetFight(const int id, std::string *err) {
         SET_ERR("Not all Teams in the Fight could be loaded.");
         return nullptr;
     }
-    loadedFights[id] = std::make_unique<Fight>(Fight::FromJson(fightJ[0], participants));
+    loadedFights[id] = std::make_unique<Fight>(Fight::FromJson(fightJ, participants));
     return loadedFights[id].get();
+}
+
+nlohmann::json MemoryManager::TryGetFightJson(const int id, std::string *err) {
+    Save();
+    const auto fightJ = saveManager->LoadWhere(TABLE(Fights), {{COL(Fights, ID), std::to_string(id)}});
+    if (fightJ.empty()) {
+        SET_ERR("Fight not found.");
+        return nullptr;
+    }
+    return fightJ[0];
 }
 
 int MemoryManager::TryCreateFight(const std::vector<int> &teamIDs, std::string *err) {
@@ -139,12 +150,8 @@ int MemoryManager::TryCreateFight(const std::vector<int> &teamIDs, std::string *
     for (const int id: teamIDs) {
         if (id == -1) continue;
         auto t = TryGetTeam(id, err);
-        if (!t || t->IsInFight()) {
+        if (!t || t->IsInFight() || t->GetLvl() <= 0) {
             SET_ERR("Not all required teams could be found and are available.");
-            return -1;
-        }
-        if (!fightRequestingTeams.contains(id)) {
-            SET_ERR("Team " + t->Name + " is not willing to fight.");
             return -1;
         }
         if (const int teamLvl = t->GetLvl(); teamLvl > bestTeamLevel) bestTeamLevel = teamLvl;
@@ -154,7 +161,7 @@ int MemoryManager::TryCreateFight(const std::vector<int> &teamIDs, std::string *
     for (const int id: teamIDs)
         if (id == -1) teams.push_back(GetNewAITeam(bestTeamLevel));
 
-    auto f = std::make_unique<Fight>(Fight(teams));
+    auto f = std::make_unique<Fight>(teams);
     const auto id = f->ID;
     Save(f.get());
     loadedFights[f->ID] = std::move(f);
@@ -182,10 +189,11 @@ bool MemoryManager::TryRegisterPlayer(std::string username, const int password, 
         return false;
     }
     const int id = saveManager->NextID(TABLE(Players));
-    saveManager->TrySaveTo(TABLE(Players), PlayerSession(id, username, password).ToJson());
+    if (!saveManager->TrySaveTo(TABLE(Players), PlayerSession(id, username, password).ToJson(), err))
+        std::cerr << err << std::endl;
+
     return true;
 }
-
 
 std::string MemoryManager::GetNewSessionID(std::string username, const int password, std::string *err) {
     std::lock_guard lock(mtx);
@@ -199,22 +207,27 @@ std::string MemoryManager::GetNewSessionID(std::string username, const int passw
     }
 
     const int playerID = playerJson[0][COL(Players, ID)].get<int>();
+
+    // Check for existing active session — safe iteration, no mutation
     for (const auto &[cookie, session]: loadedSessions) {
         if (session->PlayerID != playerID) continue;
         if (session->CheckActive()) return cookie;
-        Cleanup();
+        // Session found but expired — clean up after iteration
+        break;
     }
+    Cleanup();
 
     auto teamIDs = playerJson[0][COL(Players, teams)];
     std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> teams{};
     for (int i = 0; i < Config::Player::TeamAmount; i++) {
-        if (teamIDs.size() <= i) {
+        if (i >= teamIDs.size()) {
             teams[i] = nullptr;
             continue;
         }
         teams[i] = TryGetTeam(teamIDs[i].get<int>(), err);
-        if (!teams[i]) return "";
-        if (teams[i]->IsInFight())TryGetFight(teams[i]->CurrentFightID(), err);
+        if (!teams[i])
+            std::cerr << "CORRUPT PLAYER DATA  [" << std::to_string(playerID) << "]: TEAM NOT FOUND" << std::endl;
+        if (teams[i] && teams[i]->IsInFight()) TryGetFight(teams[i]->CurrentFightID(), err);
     }
     auto p = std::make_unique<PlayerSession>(PlayerSession::FromJson(playerJson[0], teams));
     const std::string cookie = p->SessionID;
@@ -228,13 +241,13 @@ void MemoryManager::TryLogoutPlayer(const std::string &cookie, std::string *err)
         SET_ERR("No session found.");
         return;
     }
-    saveManager->TrySaveTo(TABLE(Players), loadedSessions[cookie]->ToJson(), err);
+    if (!saveManager->TrySaveTo(TABLE(Players), loadedSessions[cookie]->ToJson(), err))
+        std::cerr << err << std::endl;
     loadedSessions.erase(cookie);
     Cleanup();
 }
 
 void MemoryManager::Cleanup() {
-    std::lock_guard lock(mtx);
     Save();
 
     // Players/Sessions
@@ -243,7 +256,7 @@ void MemoryManager::Cleanup() {
         else it = loadedSessions.erase(it);
     }
 
-    //Fights
+    // Fights
     for (auto it = loadedFights.begin(); it != loadedFights.end();) {
         if (it->second->Winner()) {
             it = loadedFights.erase(it);
@@ -268,30 +281,141 @@ void MemoryManager::Cleanup() {
 
 void MemoryManager::Save() {
     std::lock_guard lock(mtx);
+    std::string err;
     for (const auto &p: loadedSessions | std::views::values)
-        saveManager->TrySaveTo(TABLE(Players), p->ToJson());
+        if (!saveManager->TrySaveTo(TABLE(Players), p->ToJson(), &err))
+            std::cerr << err << std::endl;
+
     for (const auto &f: loadedFights | std::views::values)
-        saveManager->TrySaveTo(TABLE(Fights), f->ToJson());
+        if (!saveManager->TrySaveTo(TABLE(Fights), f->ToJson(), &err))
+            std::cerr << err << std::endl;
+
     for (const auto &tPtr: loadedTeams | std::views::values)
         if (const auto t = tPtr.lock())
-            saveManager->TrySaveTo(TABLE(Teams), t->ToJson());
+            if (!saveManager->TrySaveTo(TABLE(Teams), t->ToJson(), &err))
+                std::cerr << err << std::endl;
 }
+
 
 void MemoryManager::Save(const PlayerSession *player) {
     std::lock_guard lock(mtx);
-    saveManager->TrySaveTo(TABLE(Players), player->ToJson());
+    std::string err;
+    if (!saveManager->TrySaveTo(TABLE(Players), player->ToJson(), &err))
+        std::cerr << err << std::endl;
+
     for (const auto &t: *player->Teams()) {
-        if (!t)continue;
-        saveManager->TrySaveTo(TABLE(Teams), t->ToJson());
+        if (!t) continue;
+        if (!saveManager->TrySaveTo(TABLE(Teams), t->ToJson(), &err))
+            std::cerr << err << std::endl;
         loadedTeams[t->ID] = t;
     }
 }
 
 void MemoryManager::Save(const Fight *fight) {
     std::lock_guard lock(mtx);
-    saveManager->TrySaveTo(TABLE(Fights), fight->ToJson());
+    std::string err;
+    if (!saveManager->TrySaveTo(TABLE(Fights), fight->ToJson(), &err))
+        std::cerr << err << std::endl;
     for (auto &t: fight->Teams()) {
-        saveManager->TrySaveTo(TABLE(Teams), t->ToJson());
+        if (!saveManager->TrySaveTo(TABLE(Teams), t->ToJson(), &err))
+            std::cerr << err << std::endl;
         loadedTeams[t->ID] = t;
     }
 }
+
+#ifndef NDEBUG
+void MemoryManager::DebugDump() {
+    std::lock_guard lock(mtx);
+
+    const std::string divider(60, '=');
+    const std::string subDivider(60, '-');
+
+    std::cout << divider << "\n";
+    std::cout << "  MEMORY MANAGER DEBUG DUMP\n";
+    std::cout << divider << "\n\n";
+
+    // ── Loaded Sessions ──────────────────────────────────────────
+    std::cout << "[ LOADED SESSIONS ]  (" << loadedSessions.size() << ")\n";
+    std::cout << subDivider << "\n";
+    if (loadedSessions.empty()) {
+        std::cout << "  (none)\n";
+    } else {
+        for (const auto &[cookie, session]: loadedSessions) {
+            std::cout << "  Session ID : " << cookie << "\n";
+            std::cout << "  Player ID  : " << session->PlayerID << "\n";
+            std::cout << "  Active     : " << (session->CheckActive() ? "yes" : "no (expired)") << "\n";
+            std::cout << "  Data       : " << session->ToJson().dump(4) << "\n";
+            std::cout << subDivider << "\n";
+        }
+    }
+    std::cout << "\n";
+
+    // ── Loaded Teams ─────────────────────────────────────────────
+    std::cout << "[ LOADED TEAMS ]  (" << loadedTeams.size() << ")\n";
+    std::cout << subDivider << "\n";
+    if (loadedTeams.empty()) {
+        std::cout << "  (none)\n";
+    } else {
+        for (const auto &[id, weakTeam]: loadedTeams) {
+            if (const auto team = weakTeam.lock()) {
+                std::cout << "  Team ID    : " << id << "\n";
+                std::cout << "  Name       : " << team->Name << "\n";
+                std::cout << "  Level      : " << team->GetLvl() << "\n";
+                std::cout << "  In Fight   : " << (team->IsInFight()
+                                                       ? "yes (Fight #" + std::to_string(team->CurrentFightID()) + ")"
+                                                       : "no") << "\n";
+                std::cout << "  AI Team    : " << (team->AutoFight ? "yes" : "no") << "\n";
+                std::cout << "  Data       : " << team->ToJson().dump(4) << "\n";
+            } else {
+                std::cout << "  Team ID    : " << id << "  [EXPIRED weak_ptr]\n";
+            }
+            std::cout << subDivider << "\n";
+        }
+    }
+    std::cout << "\n";
+
+    // ── Fight Requesting Teams ────────────────────────────────────
+    std::cout << "[ FIGHT REQUESTING TEAMS ]  (" << fightRequestingTeams.size() << ")\n";
+    std::cout << subDivider << "\n";
+    if (fightRequestingTeams.empty()) {
+        std::cout << "  (none)\n";
+    } else {
+        for (const auto &[id, weakTeam]: fightRequestingTeams) {
+            if (const auto team = weakTeam.lock()) {
+                std::cout << "  Team ID    : " << id << "\n";
+                std::cout << "  Name       : " << team->Name << "\n";
+                std::cout << "  Level      : " << team->GetLvl() << "\n";
+            } else {
+                std::cout << "  Team ID    : " << id << "  [EXPIRED weak_ptr]\n";
+            }
+            std::cout << subDivider << "\n";
+        }
+    }
+    std::cout << "\n";
+
+    // ── Loaded Fights ─────────────────────────────────────────────
+    std::cout << "[ LOADED FIGHTS ]  (" << loadedFights.size() << ")\n";
+    std::cout << subDivider << "\n";
+    if (loadedFights.empty()) {
+        std::cout << "  (none)\n";
+    } else {
+        for (const auto &[id, fight]: loadedFights) {
+            std::cout << "  Fight ID   : " << id << "\n";
+            std::cout << "  Ongoing    : " << (fight->Winner() ? "no (finished)" : "yes") << "\n";
+            std::cout << "  Teams      : ";
+            for (const auto &t: fight->Teams())
+                std::cout << t->Name << " (ID=" << t->ID << ")  ";
+            std::cout << "\n";
+            auto j = fight->ToJson();
+            j[COL(Fights, log)] = {"..."};
+            std::cout << "  Data       : " << j.dump(4) << "\n";
+            std::cout << subDivider << "\n";
+        }
+    }
+    std::cout << "\n";
+
+    std::cout << divider << "\n";
+    std::cout << "  END OF DUMP\n";
+    std::cout << divider << "\n" << std::flush;
+}
+#endif

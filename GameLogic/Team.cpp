@@ -1,4 +1,6 @@
 #include "Team.h"
+
+#include <iostream>
 #include <utility>
 #include "Database/TableDefs.h"
 #include "Monsters/CreateMonster.h"
@@ -10,7 +12,7 @@ Team::Team(std::string name, const int id) : Name(std::move(name)), ID(id) {
 
 Team Team::FromJson(const nlohmann::json &j) {
     auto t = Team(j[JStr(name)].get<std::string>(), j[JStr(ID)].get<int>());
-    t.fightID = j[JStr(fight_id)].get<int>();
+    t.currentFightID = j[JStr(fight_id)].get<int>();
     const auto monJ = j[JStr(monsters)];
     for (int i = 0; i < Config::Team::Size; i++) {
         if (monJ[i].is_null()) t.monsters[i] = nullptr;
@@ -26,7 +28,7 @@ nlohmann::json Team::ToJson() const {
         {JStr(ID), ID},
         {JStr(name), Name},
         {"in_fight", IsInFight()},
-        {JStr(fight_id), fightID},
+        {JStr(fight_id), currentFightID},
         {JStr(monsters), mons},
         {JStr(auto_fight), AutoFight}
     };
@@ -81,13 +83,17 @@ bool Team::TryDeleteMonster(const int id, std::string *err) {
 }
 
 
-void Team::EnterFight(const int id, NestedLogger *l) {
+void Team::EnterFight(const int fightID, NestedLogger *log) {
+    if (IsInFight() && currentFightID != fightID) {
+        std::cerr << "TEAM " << ID << " tried to enter another fight [" << fightID << "] while already being in [" <<
+                currentFightID << "]" << std::endl;
+        return;
+    }
     for (const auto &m: monsters) {
         if (!m) continue;
-        m->Reset();
-        m->LogPtr = l;
+        m->LogPtr = log;
     }
-    fightID = id;
+    currentFightID = fightID;
 }
 
 void Team::ExitFight(const int expGain) {
@@ -100,7 +106,7 @@ void Team::ExitFight(const int expGain) {
         m->LogPtr = nullptr;
         m->Reset();
     }
-    fightID = -1;
+    currentFightID = -1;
 }
 
 #undef JStr

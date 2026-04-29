@@ -1,5 +1,7 @@
-#include "SaveManager.h"
+#include <iostream>
+#include <string>
 
+#include "SaveManager.h"
 #include "TableDefs.h"
 
 namespace Database {
@@ -126,4 +128,97 @@ namespace Database {
     SaveManager::~SaveManager() {
         sqlite3_close(db);
     }
+
+
+#ifndef NDEBUG
+
+
+    void SaveManager::DebugDump() const {
+        const std::string divider(60, '=');
+        const std::string subDivider(60, '-');
+
+        // Collect all user table names from sqlite_master
+        std::vector<std::string> tables;
+        {
+            sqlite3_stmt *stmt;
+            const std::string cmd = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;";
+            if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+                while (sqlite3_step(stmt) == SQLITE_ROW)
+                    tables.emplace_back(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
+                sqlite3_finalize(stmt);
+            }
+        }
+
+        std::cout << divider << "\n";
+        std::cout << "  SAVE MANAGER DEBUG DUMP  (" << tables.size() << " tables)\n";
+        std::cout << divider << "\n\n";
+
+        for (const auto &table: tables) {
+            // Row count
+            int rowCount = 0;
+            {
+                sqlite3_stmt *stmt;
+                const std::string cmd = "SELECT COUNT(*) FROM " + table + ";";
+                if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+                    if (sqlite3_step(stmt) == SQLITE_ROW) rowCount = sqlite3_column_int(stmt, 0);
+                    sqlite3_finalize(stmt);
+                }
+            }
+
+            std::cout << "[ TABLE: " << table << " ]  (" << rowCount << " rows)\n";
+            std::cout << subDivider << "\n";
+
+            if (rowCount == 0) {
+                std::cout << "  (empty)\n\n";
+                continue;
+            }
+
+            sqlite3_stmt *stmt;
+            const std::string cmd = "SELECT * FROM " + table + ";";
+            if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+                std::cout << "  [ERROR: " << sqlite3_errmsg(db) << "]\n\n";
+                continue;
+            }
+
+            const int colCount = sqlite3_column_count(stmt);
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                for (int i = 0; i < colCount; i++) {
+                    const std::string colName = sqlite3_column_name(stmt, i);
+                    std::string value;
+                    switch (sqlite3_column_type(stmt, i)) {
+                        case SQLITE_INTEGER:
+                            value = std::to_string(sqlite3_column_int(stmt, i));
+                            break;
+                        case SQLITE_FLOAT:
+                            value = std::to_string(sqlite3_column_double(stmt, i));
+                            break;
+                        case SQLITE_TEXT: {
+                            const std::string text = reinterpret_cast<const char *>(sqlite3_column_text(stmt, i));
+                            // Collapse JSON objects/arrays to a placeholder
+                            if (!text.empty() && (text.front() == '{' || text.front() == '['))
+                                value = (text.front() == '{') ? "{...}" : "[...]";
+                            else
+                                value = text;
+                            break;
+                        }
+                        case SQLITE_NULL:
+                            value = "NULL";
+                            break;
+                        default:
+                            value = "?";
+                            break;
+                    }
+                    std::cout << "  " << colName << " : " << value << "\n";
+                }
+                std::cout << subDivider << "\n";
+            }
+            sqlite3_finalize(stmt);
+            std::cout << "\n";
+        }
+
+        std::cout << divider << "\n";
+        std::cout << "  END OF DUMP\n";
+        std::cout << divider << "\n" << std::flush;
+    }
+#endif
 }

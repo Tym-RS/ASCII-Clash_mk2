@@ -69,7 +69,7 @@ void Monster::Heal(int amount) {
         return;
     }
     if (amount > headroom) {
-        TryLog(Name + " has " + std::to_string(headroom) + " HP of healing headroom left.", LType::Nerdy);
+        TryLog(Name + " has " + std::to_string(headroom) + " HP of healing left.", LType::Nerdy);
     }
 
     amount = std::clamp(amount, 0, headroom);
@@ -85,7 +85,7 @@ bool Monster::ReceiveAttack(Monster *from) {
 
 
 void Monster::AttackImpl(Monster *target) {
-    BaseReceiveAttack(target);
+    BaseAttack(target);
 }
 
 void Monster::BaseAttack(Monster *target) {
@@ -109,9 +109,9 @@ bool Monster::ReceiveAttackImpl(Monster *from) {
 }
 
 bool Monster::BaseReceiveAttack(Monster *from) {
-    const int hitChance = static_cast<int>(
-        CalculateHitChance(from->GetStatDict()->Get(Stat::Offense), GetStatDict()->Get(Stat::Defence)));
-    TryLog(Name + " has a " + std::to_string(hitChance) + "% chance to dodge.", LType::Nerdy);
+    const float hitChance = CalculateHitChance(from->GetStatDict()->Get(Stat::Offense),
+                                               GetStatDict()->Get(Stat::Defence));
+    TryLog(Name + " has a " + std::to_string(hitChance * 100.0) + "% chance to dodge.", LType::Nerdy);
     if (hitChance > RandomPCT()) {
         TryLog(Name + " sidesteps the blow!", LType::Major);
         return false;
