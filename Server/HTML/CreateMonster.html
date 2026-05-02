@@ -11,114 +11,81 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-bottom: 0.6rem;
+            margin: 0.5rem 0;
         }
 
         .carousel-wrap {
             flex: 1;
             overflow: hidden;
-            position: relative;
-            min-height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 10rem;
+            border: 1px solid var(--dim);
+            background: #000;
+            position: relative;
         }
 
         .carousel-card {
-            width: 100%;
             text-align: center;
-            padding: 0.75rem 0.5rem;
-            border: 2px solid var(--dim);
-            background: rgba(0, 0, 0, 0.4);
+            padding: 1rem 0.85rem;
+            width: 100%;
+            animation-duration: 0.18s;
+            animation-fill-mode: both;
         }
 
         .carousel-img {
-            width: 72px;
-            height: 72px;
-            object-fit: contain;
+            width: 4.5rem;
+            height: 4.5rem;
             image-rendering: pixelated;
+            object-fit: contain;
             display: block;
-            margin: 0 auto 0.6rem;
+            margin: 0 auto 0.65rem;
+            border: 1px solid rgba(0, 122, 31, 0.3);
         }
 
         .carousel-name {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             color: var(--green);
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
         }
 
         .carousel-desc {
             font-size: 0.42rem;
-            color: var(--dim);
+            color: var(--text);
             line-height: 2;
+            opacity: 0.72;
         }
 
-        /* ── Dots ── */
         .carousel-dots {
             display: flex;
+            gap: 0.35rem;
             justify-content: center;
-            gap: 0.4rem;
-            margin-bottom: 1.25rem;
+            margin: 0.5rem 0 0.75rem;
         }
 
         .carousel-dot {
             width: 8px;
             height: 8px;
-            background: transparent;
-            border: 1px solid var(--dim);
+            background: var(--dim);
+            border: none;
             cursor: pointer;
             padding: 0;
-            transition: background 0.15s, border-color 0.15s;
+            transition: background 0.15s;
         }
 
         .carousel-dot.active {
             background: var(--green);
-            border-color: var(--green);
+            box-shadow: 0 0 6px rgba(0, 255, 65, 0.6);
         }
 
-        /* ── Slide animations ── */
-        @keyframes slideOutLeft {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(-18px);
-            }
-        }
-
-        @keyframes slideOutRight {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(18px);
-            }
-        }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(18px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-18px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        /* ── Keyboard hint ── */
+        .kb-hint {
+            font-size: 0.38rem;
+            color: rgba(0, 122, 31, 0.4);
+            text-align: center;
+            margin-bottom: 0.75rem;
         }
     </style>
 </head>
@@ -127,183 +94,163 @@
     <a id="backLink" href="/PlayerTeams.html" class="nav-back">◀ BACK</a>
     <h1>New Monster</h1>
 
-    <div class="msg-error" id="err"></div>
-
-    <div class="field">
-        <label for="monsterName">Name</label>
-        <input type="text" id="monsterName" name="monsterName"
-               spellcheck="false" maxlength="32" autocomplete="off">
-    </div>
-
-    <div class="section-label" style="margin-bottom:0.5rem">Type</div>
-
-    <div class="carousel-row">
-        <button class="btn-small" id="btnPrev" aria-label="Previous type">◀</button>
-        <div class="carousel-wrap" id="carouselWrap">
-            <div class="loading">loading...</div>
+    <div id="loadingMsg" class="loading">loading...</div>
+    <div id="content" style="display:none">
+        <div class="carousel-row">
+            <button class="btn-small" id="btnPrev" aria-label="Previous type">◀</button>
+            <div class="carousel-wrap">
+                <div class="carousel-card" id="carouselCard"></div>
+            </div>
+            <button class="btn-small" id="btnNext" aria-label="Next type">▶</button>
         </div>
-        <button class="btn-small" id="btnNext" aria-label="Next type">▶</button>
+
+        <div class="carousel-dots" id="carouselDots"></div>
+        <div class="kb-hint">◀ ▶ arrow keys to browse</div>
+
+        <div class="field">
+            <label for="monsterName">Name</label>
+            <input type="text" id="monsterName" name="monsterName"
+                   spellcheck="false" maxlength="15" autocomplete="off">
+        </div>
+
+        <div class="msg-error" id="err"></div>
+        <button class="btn-primary" id="btnCreate">[ CREATE ]</button>
     </div>
-
-    <div class="carousel-dots" id="carouselDots"></div>
-
-    <button class="btn-primary" id="btnCreate">[ CREATE ]</button>
 </div>
 
 <script src="/utils.js"></script>
 <script>
-    const params = new URLSearchParams(location.search);
-    const teamID = params.get('teamID');
+    const params  = new URLSearchParams(location.search);
+    const teamID  = params.get('teamID');
+    const from    = params.get('from');
     if (!teamID) location.href = '/PlayerTeams.html';
 
-    // Fix back link to return to correct team
-    document.getElementById('backLink').href = '/ViewTeam.html?id=' + teamID;
+    // Back link propagates the 'from' context
+    document.getElementById('backLink').href =
+        '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
 
-    const errBox = document.getElementById('err');
-    const btnPrev = document.getElementById('btnPrev');
-    const btnNext = document.getElementById('btnNext');
-    const wrap = document.getElementById('carouselWrap');
-    const dotsEl = document.getElementById('carouselDots');
-    const btnCreate = document.getElementById('btnCreate');
+    let monsterTypes = [];   // [{ key, desc }]
+    let currentIdx   = 0;
 
-    let types = [];   // [{ name, desc }]
-    let idx = 0;
-    let locked = false;
-
-    // ── Load types from GameInfo ──────────────────────────
-    async function loadTypes() {
+    // ── Load types from /GameInfo ─────────────────────────
+    async function init() {
         const res = await post('/GameInfo');
         if (!res || !res.ok) {
-            showError(errBox, 'Failed to load monster types');
+            location.href = '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
             return;
         }
-        const data = await res.json();
-        const monsters = data.Monsters;
-        if (!monsters) {
-            showError(errBox, 'No monster types found');
+        const info = await res.json();
+        monsterTypes = Object.entries(info.Monsters || {}).map(([key, desc]) => ({ key, desc }));
+        if (monsterTypes.length === 0) {
+            location.href = '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
             return;
         }
-
-        types = Object.entries(monsters).map(([name, desc]) => ({name, desc}));
-        if (types.length === 0) {
-            showError(errBox, 'No monster types found');
-            return;
-        }
-
-        const showNav = types.length > 1;
-        btnPrev.style.visibility = showNav ? 'visible' : 'hidden';
-        btnNext.style.visibility = showNav ? 'visible' : 'hidden';
-
-        renderCard(idx, null);
         buildDots();
-    }
-
-    // ── Render card ───────────────────────────────────────
-    function renderCard(i, animIn) {
-        wrap.innerHTML = '';
-        const card = document.createElement('div');
-        card.className = 'carousel-card';
-        card.innerHTML = `
-        <img class="carousel-img"
-             src="/images/${encodeURIComponent(types[i].name)}.png"
-             alt="${types[i].name}"
-             onerror="this.src='/images/NA.png'">
-        <div class="carousel-name">${types[i].name}</div>
-        <div class="carousel-desc">${types[i].desc}</div>
-      `;
-        if (animIn) card.style.animation = `${animIn} 160ms ease forwards`;
-        wrap.appendChild(card);
-        updateDotActive();
+        showCard(0, null);
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('content').style.display    = 'block';
     }
 
     // ── Dots ──────────────────────────────────────────────
     function buildDots() {
-        dotsEl.innerHTML = '';
-        types.forEach((_, i) => {
+        const dotsWrap = document.getElementById('carouselDots');
+        dotsWrap.innerHTML = '';
+        monsterTypes.forEach((_, i) => {
             const dot = document.createElement('button');
-            dot.className = 'carousel-dot' + (i === idx ? ' active' : '');
-            dot.setAttribute('aria-label', 'Select type ' + (i + 1));
-            dot.addEventListener('click', () => {
-                if (locked || i === idx) return;
-                const dir = i > idx ? 1 : -1;
-                idx = i;
-                buildDots();
-                animateTransition(dir);
-            });
-            dotsEl.appendChild(dot);
+            dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('aria-label', 'Type ' + (i + 1));
+            dot.addEventListener('click', () => showCard(i, i < currentIdx ? 'left' : 'right'));
+            dotsWrap.appendChild(dot);
         });
     }
 
-    function updateDotActive() {
-        dotsEl.querySelectorAll('.carousel-dot')
-            .forEach((d, i) => d.classList.toggle('active', i === idx));
+    function updateDots() {
+        document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+            d.classList.toggle('active', i === currentIdx);
+        });
     }
 
-    // ── Slide animation ───────────────────────────────────
-    function animateTransition(dir) {
-        if (locked) return;
-        locked = true;
-        const outAnim = dir > 0 ? 'slideOutLeft' : 'slideOutRight';
-        const inAnim = dir > 0 ? 'slideInRight' : 'slideInLeft';
-        const card = wrap.querySelector('.carousel-card');
-        if (card) card.style.animation = `${outAnim} 160ms ease forwards`;
-        setTimeout(() => {
-            renderCard(idx, inAnim);
-            setTimeout(() => {
-                locked = false;
-            }, 160);
-        }, 160);
+    // ── Show card ─────────────────────────────────────────
+    function showCard(idx, direction) {
+        const card = document.getElementById('carouselCard');
+        const type = monsterTypes[idx];
+
+        const animIn  = direction === 'left'  ? 'slideInLeft'  :
+            direction === 'right' ? 'slideInRight' : null;
+
+        if (animIn) {
+            card.style.animation = '';
+            void card.offsetWidth;
+        }
+
+        card.innerHTML = `
+            <img class="carousel-img"
+                 src="/images/${encodeURIComponent(type.key)}.png"
+                 alt="${type.key}"
+                 onerror="this.src='/images/NA.png'">
+            <div class="carousel-name">${type.key}</div>
+            <div class="carousel-desc">${type.desc || ''}</div>
+        `;
+
+        if (animIn) card.style.animation = `${animIn} 0.18s both`;
+
+        currentIdx = idx;
+        updateDots();
     }
 
-    // ── Nav buttons ───────────────────────────────────────
-    btnPrev.addEventListener('click', () => {
-        if (locked || types.length < 2) return;
-        idx = (idx - 1 + types.length) % types.length;
-        buildDots();
-        animateTransition(-1);
+    // ── Navigation ────────────────────────────────────────
+    function prev() {
+        const idx = (currentIdx - 1 + monsterTypes.length) % monsterTypes.length;
+        showCard(idx, 'left');
+    }
+
+    function next() {
+        const idx = (currentIdx + 1) % monsterTypes.length;
+        showCard(idx, 'right');
+    }
+
+    document.getElementById('btnPrev').addEventListener('click', prev);
+    document.getElementById('btnNext').addEventListener('click', next);
+
+    // Keyboard navigation (left/right arrow keys)
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;  // don't hijack text input
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
     });
 
-    btnNext.addEventListener('click', () => {
-        if (locked || types.length < 2) return;
-        idx = (idx + 1) % types.length;
-        buildDots();
-        animateTransition(1);
-    });
+    // ── Create ────────────────────────────────────────────
+    const err     = document.getElementById('err');
+    const btnCreate = document.getElementById('btnCreate');
 
-    // ── Create monster ────────────────────────────────────
     btnCreate.addEventListener('click', async () => {
-        hideMsg(errBox);
-
+        hideMsg(err);
         const name = document.getElementById('monsterName').value.trim();
-        if (!name) {
-            showError(errBox, 'Please enter a name');
-            return;
-        }
-        if (types.length === 0) {
-            showError(errBox, 'No types loaded yet');
-            return;
-        }
+        if (!name) { showError(err, 'Please enter a name'); return; }
 
-        const type = types[idx].name;
         btnCreate.disabled = true;
+        const res = await postForm('/CreateMonster', {
+            team_ID: teamID,
+            name,
+            type: monsterTypes[currentIdx].key,
+        });
 
-        const res = await postForm('/CreateMonster', {team_ID: teamID, name, type});
-        if (!res) {
-            btnCreate.disabled = false;
-            return;
-        }
+        if (!res) { btnCreate.disabled = false; return; }
 
         if (res.ok) {
-            const newID = await res.text();
-            location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + newID.trim()
+            location.href = '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
         } else {
             const msg = await res.text();
-            showError(errBox, msg || 'Failed to create monster');
+            showError(err, msg || 'Failed to create monster');
             btnCreate.disabled = false;
         }
     });
 
-    loadTypes();
+    document.getElementById('monsterName').addEventListener('keydown', e => {
+        if (e.key === 'Enter') btnCreate.click();
+    });
+
+    init();
 </script>
 </body>
 </html>

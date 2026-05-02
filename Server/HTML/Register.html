@@ -8,6 +8,7 @@
 </head>
 <body>
 <div class="container">
+  <a href="/index.html" class="nav-back">◀ BACK TO LOGIN</a>
   <h1>New Player</h1>
 
   <div class="msg-error" id="err"></div>
@@ -16,7 +17,7 @@
     <div class="field">
       <label for="username">Username</label>
       <input type="text" id="username" name="username"
-             autocomplete="username" spellcheck="false" required>
+             autocomplete="username" spellcheck="false" required maxlength="15">
     </div>
     <div class="field">
       <label for="password">Password</label>
@@ -30,9 +31,6 @@
     </div>
     <button type="submit" class="btn-primary" id="btnRegister">[ REGISTER ]</button>
   </form>
-
-  <hr class="sep">
-  <a href="/index.html">◀ Back to Login</a>
 
   <div class="msg-info">
     !! This is a small test project — NOT secure.<br>
@@ -62,7 +60,6 @@
 
     btn.disabled = true;
 
-    // Step 1: Register
     const regRes = await postForm('/Register', { username, password });
     if (!regRes) { btn.disabled = false; return; }
 
@@ -74,7 +71,6 @@
       return;
     }
 
-    // Step 2: Login immediately after successful register
     const loginRes = await postForm('/Login', { username, password });
     if (!loginRes) { btn.disabled = false; return; }
 

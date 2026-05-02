@@ -7,164 +7,57 @@
     <link rel="stylesheet" href="/style.css">
     <style>
         /* ── Header ── */
-        .monster-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--dim);
-        }
+        .monster-header { flex-wrap: wrap; }
 
-        .monster-header-img {
-            width: 64px;
-            height: 64px;
-            object-fit: contain;
-            image-rendering: pixelated;
-            flex-shrink: 0;
-        }
-
-        .monster-header-info {
-            min-width: 0;
-        }
-
-        .monster-name {
-            font-size: 0.7rem;
-            color: var(--green);
-            margin-bottom: 0.3rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .monster-type-lv {
+        .monster-type-desc {
             font-size: 0.42rem;
-            color: var(--dim);
+            color: rgba(0, 200, 55, 0.6);
+            line-height: 2;
+            margin-top: 0.35rem;
         }
 
-        /* ── Bars ── */
-        .bar-row {
-            margin-bottom: 0.75rem;
+        /* ── HP bar in header area ── */
+        .header-hp {
+            width: 100%;
+            margin-top: 0.85rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(0, 122, 31, 0.2);
         }
 
-        .bar-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.38rem;
-            color: var(--dim);
-            margin-bottom: 0.2rem;
-        }
-
-        .bar-label strong {
-            color: var(--text);
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: rgba(0, 122, 31, 0.15);
-            border: 1px solid rgba(0, 122, 31, 0.3);
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--green);
-            transition: width 0.3s ease;
-        }
-
-        .sp-fill {
-            background: rgba(0, 255, 65, 0.55);
-        }
-
-        /* ── Stat sections ── */
-        .stats-section {
-            margin-top: 1.25rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.35rem 0;
-            border-bottom: 1px solid rgba(0, 122, 31, 0.12);
-            min-height: 36px;
-        }
-
-        .stat-row.readonly {
-            opacity: 0.6;
-        }
-
-        .stat-label {
-            flex: 1;
-            font-size: 0.45rem;
-            color: var(--dim);
-            text-transform: lowercase;
-        }
-
-        .stat-value {
-            font-size: 0.5rem;
-            color: var(--text);
-            min-width: 2rem;
-            text-align: right;
-        }
-
-        .stat-delta {
+        /* ── In-fight warning ── */
+        .infight-banner {
+            display: none;
+            border: 1px solid rgba(255, 224, 0, 0.5);
+            background: rgba(255, 224, 0, 0.05);
+            color: #ffe000;
             font-size: 0.42rem;
-            color: var(--green);
-            min-width: 2rem;
-            text-align: left;
-            opacity: 0;
-            transition: opacity 0.15s;
+            padding: 0.65rem 0.75rem;
+            line-height: 2;
+            margin-bottom: 1rem;
         }
 
-        .stat-delta.visible {
-            opacity: 1;
-        }
-
-        /* ── Apply row ── */
-        .apply-row {
-            margin-top: 1rem;
-            margin-bottom: 0.25rem;
-        }
+        /* ── Stat sections (overrides for tighter bar labels) ── */
+        .bar-label { margin-bottom: 0.2rem; }
 
         /* ── Tooltip ── */
-        .tooltip {
-            position: fixed;
-            display: none;
-            background: #000;
-            border: 1px solid var(--green);
-            color: var(--text);
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.38rem;
-            padding: 0.45rem 0.55rem;
-            max-width: 220px;
-            line-height: 2;
-            z-index: 200;
-            pointer-events: none;
-        }
+        .tooltip { font-size: 0.42rem; }
 
         /* ── Delete ── */
         .btn-danger {
-            width: 100%;
-            background: transparent;
+            width: 100%; background: transparent;
             color: rgba(0, 122, 31, 0.45);
             font-family: 'Press Start 2P', monospace;
             font-size: 0.5rem;
             border: 1px solid rgba(0, 122, 31, 0.25);
-            padding: 0.75rem;
-            cursor: pointer;
-            min-height: 48px;
+            padding: 0.75rem; cursor: pointer;
+            min-height: calc(48px * var(--scale));
             transition: color 0.15s, border-color 0.15s;
         }
 
-        .btn-danger:hover {
-            color: var(--red);
-            border-color: var(--red);
-        }
+        .btn-danger:hover { color: var(--red); border-color: var(--red); }
 
         .btn-danger.armed {
-            color: var(--red);
-            border-color: var(--red);
+            color: var(--red); border-color: var(--red);
             animation: blink 0.6s step-end infinite;
         }
     </style>
@@ -180,45 +73,55 @@
 
 <script src="/utils.js"></script>
 <script>
-    const params = new URLSearchParams(location.search);
-    const teamID = params.get('teamID');
+    const params    = new URLSearchParams(location.search);
+    const teamID    = params.get('teamID');
     const monsterID = params.get('monsterID');
+    const from      = params.get('from');
     if (!teamID || !monsterID) location.href = '/PlayerTeams.html';
 
-    document.getElementById('backLink').href = '/ViewTeam.html?id=' + teamID;
+    // Set back link — propagate from param so ViewTeam knows where to go back
+    document.getElementById('backLink').href =
+        '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
 
     const tooltip = document.getElementById('tooltip');
     const content = document.getElementById('content');
-    const SKIP = new Set(['id', 'name', 'type', 'current_health', 'healing_done', 'is_healer']);
+    const SKIP    = new Set(['id', 'name', 'type', 'current_health', 'healing_done', 'is_healer']);
 
-    let monster = null;
-    let gameStats = null;   // { StatName: { Description, Default, LevelUp } }
-    let pending = {};
+    let monster   = null;
+    let gameStats   = null;
+    let gameMonsters = null;
+    let inFight   = false;
+    let pending   = {};
 
     // ── Load ──────────────────────────────────────────────
     async function init() {
-        const [infoRes, monRes] = await Promise.all([
+        const [infoRes, monRes, teamRes] = await Promise.all([
             post('/GameInfo'),
-            postForm('/ViewMonster', {team_ID: teamID, monster_ID: monsterID}),
+            postForm('/ViewMonster', { team_ID: teamID, monster_ID: monsterID }),
+            postForm('/ViewTeam',    { ID: teamID }),
         ]);
 
         if (!infoRes || !monRes || !infoRes.ok || !monRes.ok) {
-            location.href = '/ViewTeam.html?id=' + teamID;
+            location.href = '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
             return;
         }
 
-        const infoData = await infoRes.json();
-        gameStats = infoData.Stats;
-        monster = await monRes.json();
+        const infoData  = await infoRes.json();
+        gameStats    = infoData.Stats;
+        gameMonsters = infoData.Monsters;
+        monster      = await monRes.json();
+
+        if (teamRes && teamRes.ok) {
+            const teamData = await teamRes.json();
+            inFight = !!teamData.in_fight;
+        }
 
         document.title = 'ASCII Clash — ' + monster.name;
         document.getElementById('loadingMsg').style.display = 'none';
         content.style.display = 'block';
 
-        // Init pending map for levelable stats only
-        for (const [statName, info] of Object.entries(gameStats)) {
+        for (const [statName, info] of Object.entries(gameStats))
             if (info.LevelUp > 0) pending[statName] = 0;
-        }
 
         render();
     }
@@ -228,28 +131,34 @@
         return monster.stats.SkillPoints - Object.values(pending).reduce((a, b) => a + b, 0);
     }
 
-    function hasPending() {
-        return Object.values(pending).some(v => v > 0);
-    }
+    function hasPending() { return Object.values(pending).some(v => v > 0); }
 
     // ── Full re-render ────────────────────────────────────
     function render() {
         content.innerHTML = '';
 
         // Header
+        const typeDesc = gameMonsters ? (gameMonsters[monster.type] || '') : '';
         const header = document.createElement('div');
         header.className = 'monster-header';
         header.innerHTML = `
-        <img class="monster-header-img"
-             src="/images/${encodeURIComponent(monster.type)}.png"
-             alt="${monster.type}"
-             onerror="this.src='/images/NA.png'">
-        <div class="monster-header-info">
-          <div class="monster-name">${monster.name}</div>
-          <div class="monster-type-lv">${monster.type} · LV.${monster.stats.Level}</div>
-        </div>
-      `;
+            <img class="monster-header-img"
+                 src="/images/${encodeURIComponent(monster.type)}.png"
+                 alt="${monster.type}"
+                 onerror="this.src='/images/NA.png'">
+            <div class="monster-header-info">
+                <div class="monster-name">${monster.name}</div>
+                <div class="monster-type-lv">${monster.type} · LV.${monster.stats.Level}</div>
+                ${typeDesc ? `<div class="monster-type-desc">${typeDesc}</div>` : ''}
+            </div>
+        `;
         content.appendChild(header);
+
+        // HP bar (always shown)
+        const maxHP = monster.stats.Health;
+        const curHP = monster.current_health;
+        const hpPct = maxHP > 0 ? Math.min((curHP / maxHP) * 100, 100).toFixed(1) : '0';
+        appendBar(content, 'HP', `${curHP} / ${maxHP}`, hpPct, '');
 
         // EXP bar
         const expMax = monster.stats.Level * 2;
@@ -257,10 +166,17 @@
         appendBar(content, 'EXP', `${monster.stats.Exp} / ${expMax}`, expPct, '');
 
         // Skill points bar
-        const pool = getPool();
+        const pool  = getPool();
         const spMax = monster.stats.SkillPoints;
         const spPct = spMax > 0 ? Math.max(0, (pool / spMax) * 100).toFixed(1) : '0';
         appendBar(content, 'Skill Points', `${pool} / ${spMax}`, spPct, 'sp-fill', 'spCount', 'spFill');
+
+        // In-fight warning
+        const warnBanner = document.createElement('div');
+        warnBanner.className = 'infight-banner';
+        warnBanner.textContent = '!! TEAM IS IN A FIGHT — leveling is locked.';
+        warnBanner.style.display = inFight ? 'block' : 'none';
+        content.appendChild(warnBanner);
 
         // Levelable stats
         const lvSection = document.createElement('div');
@@ -274,29 +190,27 @@
 
         for (const [statName, info] of Object.entries(gameStats)) {
             if (info.LevelUp <= 0) continue;
-            const key = statName;
-            const curVal = monster.stats[key] + (pending[statName] || 0) * info.LevelUp;
-
-            const row = document.createElement('div');
-            row.className = 'stat-row';
-            row.dataset.tip = info.Description;
-            row.dataset.stat = statName;
-
+            const curVal  = monster.stats[statName] + (pending[statName] || 0) * info.LevelUp;
             const hasDelta = (pending[statName] || 0) > 0;
 
+            const row = document.createElement('div');
+            row.className    = 'stat-row';
+            row.dataset.tip  = info.Description;
+            row.dataset.stat = statName;
+
             row.innerHTML = `
-          <span class="stat-label">${statName}</span>
-          <button class="btn-small" data-action="minus" data-stat="${statName}"
-                  aria-label="decrease ${statName}"
-                  ${pending[statName] <= 0 ? 'disabled' : ''}>−</button>
-          <span class="stat-value" id="val-${statName}">${curVal}</span>
-          <button class="btn-small" data-action="plus" data-stat="${statName}"
-                  aria-label="increase ${statName}"
-                  ${getPool() <= 0 ? 'disabled' : ''}>+</button>
-          <span class="stat-delta${hasDelta ? ' visible' : ''}" id="delta-${statName}">
-            ${hasDelta ? '+' + (pending[statName] * info.LevelUp) : ''}
-          </span>
-        `;
+                <span class="stat-label">${statName}</span>
+                <button class="btn-small" data-action="minus" data-stat="${statName}"
+                        aria-label="decrease ${statName}"
+                        ${(pending[statName] <= 0 || inFight) ? 'disabled' : ''}>−</button>
+                <span class="stat-value" id="val-${statName}">${curVal}</span>
+                <button class="btn-small" data-action="plus" data-stat="${statName}"
+                        aria-label="increase ${statName}"
+                        ${(getPool() <= 0 || inFight) ? 'disabled' : ''}>+</button>
+                <span class="stat-delta${hasDelta ? ' visible' : ''}" id="delta-${statName}">
+                    ${hasDelta ? '+' + (pending[statName] * info.LevelUp) : ''}
+                </span>
+            `;
             attachTooltip(row);
             lvSection.appendChild(row);
         }
@@ -306,9 +220,9 @@
         const applyRow = document.createElement('div');
         applyRow.className = 'apply-row';
         const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn-primary';
-        applyBtn.id = 'btnApply';
-        applyBtn.disabled = !hasPending();
+        applyBtn.className   = 'btn-primary';
+        applyBtn.id          = 'btnApply';
+        applyBtn.disabled    = !hasPending() || inFight;
         applyBtn.textContent = '[ APPLY ]';
         applyRow.appendChild(applyBtn);
         content.appendChild(applyRow);
@@ -318,17 +232,16 @@
         roSection.className = 'stats-section';
         roSection.innerHTML = '<div class="section-label">Info</div>';
 
-        // Remaining read-only stats (LevelUp === 0, not SKIP)
         for (const [statName, info] of Object.entries(gameStats)) {
             if (info.LevelUp !== 0 || SKIP.has(statName)) continue;
             if (!(statName in monster.stats)) continue;
             const row = document.createElement('div');
-            row.className = 'stat-row readonly';
+            row.className  = 'stat-row readonly';
             row.dataset.tip = info.Description;
-            row.innerHTML = `
-          <span class="stat-label">${statName}</span>
-          <span class="stat-value">${monster.stats[statName]}</span>
-        `;
+            row.innerHTML  = `
+                <span class="stat-label">${statName}</span>
+                <span class="stat-value">${monster.stats[statName]}</span>
+            `;
             attachTooltip(row);
             roSection.appendChild(row);
         }
@@ -340,7 +253,7 @@
         content.appendChild(sep);
 
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn-danger';
+        deleteBtn.className   = 'btn-danger';
         deleteBtn.textContent = '[ DELETE MONSTER ]';
         content.appendChild(deleteBtn);
 
@@ -354,31 +267,28 @@
         const row = document.createElement('div');
         row.className = 'bar-row';
         row.innerHTML = `
-        <div class="bar-label">
-          <span>${label}</span>
-          <strong${countId ? ` id="${countId}"` : ''}>${valText}</strong>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill${fillClass ? ' ' + fillClass : ''}"
-               ${fillId ? `id="${fillId}"` : ''}
-               style="width:${pct}%"></div>
-        </div>
-      `;
+            <div class="bar-label">
+                <span>${label}</span>
+                <strong${countId ? ` id="${countId}"` : ''}>${valText}</strong>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill${fillClass ? ' ' + fillClass : ''}"
+                     ${fillId ? `id="${fillId}"` : ''}
+                     style="width:${pct}%"></div>
+            </div>
+        `;
         parent.appendChild(row);
     }
 
-    // ── Update SP display without full re-render ──────────
+    // ── Update SP display ─────────────────────────────────
     function updatePool() {
         const pool = getPool();
-        const pct = monster.stats.SkillPoints > 0
-            ? Math.max(0, (pool / monster.stats.SkillPoints) * 100)
-            : 0;
+        const pct  = monster.stats.SkillPoints > 0
+            ? Math.max(0, (pool / monster.stats.SkillPoints) * 100) : 0;
         const countEl = document.getElementById('spCount');
-        const fillEl = document.getElementById('spFill');
-        const statEl = document.getElementById('spStatVal');
+        const fillEl  = document.getElementById('spFill');
         if (countEl) countEl.textContent = `${pool} / ${monster.stats.SkillPoints}`;
-        if (fillEl) fillEl.style.width = pct + '%';
-        if (statEl) statEl.textContent = pool;
+        if (fillEl)  fillEl.style.width  = pct + '%';
     }
 
     // ── Stat +/- buttons ──────────────────────────────────
@@ -388,8 +298,8 @@
             if (!btn || btn.disabled) return;
 
             const statName = btn.dataset.stat;
-            const info = gameStats[statName];
-            const action = btn.dataset.action;
+            const info     = gameStats[statName];
+            const action   = btn.dataset.action;
 
             if (action === 'plus') {
                 if (getPool() <= 0) return;
@@ -400,7 +310,7 @@
             }
 
             const newVal = monster.stats[statName] + pending[statName] * info.LevelUp;
-            const valEl = document.getElementById('val-' + statName);
+            const valEl   = document.getElementById('val-' + statName);
             const deltaEl = document.getElementById('delta-' + statName);
 
             if (valEl) valEl.textContent = newVal;
@@ -418,9 +328,7 @@
             if (minusBtn) minusBtn.disabled = pending[statName] <= 0;
 
             const pool = getPool();
-            section.querySelectorAll('[data-action="plus"]').forEach(b => {
-                b.disabled = pool <= 0;
-            });
+            section.querySelectorAll('[data-action="plus"]').forEach(b => { b.disabled = pool <= 0; });
 
             updatePool();
 
@@ -437,23 +345,18 @@
             btn.disabled = true;
 
             const body = {};
-            for (const [k, v] of Object.entries(pending)) {
+            for (const [k, v] of Object.entries(pending))
                 if (v > 0) body[k] = v;
-            }
 
             const res = await postJSON(
                 '/LevelMonster?team_ID=' + teamID + '&monster_ID=' + monsterID,
                 body
             );
-            if (!res) {
-                btn.disabled = false;
-                return;
-            }
+            if (!res) { btn.disabled = false; return; }
 
             if (res.ok) {
-                for (const [statName, times] of Object.entries(body)) {
+                for (const [statName, times] of Object.entries(body))
                     monster.stats[statName] += times * gameStats[statName].LevelUp;
-                }
                 const spent = Object.values(body).reduce((a, b) => a + b, 0);
                 monster.stats.SkillPoints -= spent;
                 for (const k in pending) pending[k] = 0;
@@ -489,10 +392,7 @@
             } else {
                 clearTimeout(deleteTimer);
                 btn.disabled = true;
-                const res = await postForm('/DeleteMonster', {
-                    team_ID: teamID,
-                    monster_ID: monsterID,
-                });
+                const res = await postForm('/DeleteMonster', { team_ID: teamID, monster_ID: monsterID });
                 if (!res || !res.ok) {
                     btn.disabled = false;
                     deleteStage = 0;
@@ -500,7 +400,7 @@
                     btn.classList.remove('armed');
                     return;
                 }
-                location.href = '/ViewTeam.html?id=' + teamID;
+                location.href = '/ViewTeam.html?id=' + teamID + (from ? '&from=' + from : '');
             }
         });
     }
@@ -515,32 +415,25 @@
             tooltip.style.display = 'block';
         });
         row.addEventListener('mousemove', (e) => {
-            const tw = tooltip.offsetWidth;
-            const th = tooltip.offsetHeight;
-            let x = e.clientX + 14;
-            let y = e.clientY - th - 10;
+            const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+            let x = e.clientX + 14, y = e.clientY - th - 10;
             x = Math.min(x, window.innerWidth - tw - 8);
             y = Math.max(y, 8);
             tooltip.style.left = x + 'px';
-            tooltip.style.top = y + 'px';
+            tooltip.style.top  = y + 'px';
         });
-        row.addEventListener('mouseleave', () => {
-            tooltip.style.display = 'none';
-        });
+        row.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
         row.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             tooltip.textContent = tip;
             let x = Math.min(touch.clientX, window.innerWidth - 230);
-            let y = touch.clientY - 72;
-            y = Math.max(y, 8);
-            tooltip.style.left = x + 'px';
-            tooltip.style.top = y + 'px';
+            let y = Math.max(touch.clientY - 72, 8);
+            tooltip.style.left    = x + 'px';
+            tooltip.style.top     = y + 'px';
             tooltip.style.display = 'block';
-        }, {passive: true});
+        }, { passive: true });
         row.addEventListener('touchend', () => {
-            setTimeout(() => {
-                tooltip.style.display = 'none';
-            }, 1500);
+            setTimeout(() => { tooltip.style.display = 'none'; }, 1500);
         });
     }
 

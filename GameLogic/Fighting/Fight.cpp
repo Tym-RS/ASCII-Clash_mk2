@@ -1,10 +1,10 @@
-#include "Fight.h"
-#include "Fight.h"
 #include <string>
 #include <nlohmann/json.hpp>
-#include "Database/TableDefs.h"
+
 #include "GameLogic/Monsters/MonsterBase.h"
+#include "Database/TableDefs.h"
 #include "GameLogic/Team.h"
+#include "Fight.h"
 
 #define JStr(at) COL(Fights, at)
 
@@ -13,8 +13,7 @@ inline int GetHash(const std::vector<std::shared_ptr<Team> > &teams) {
     for (const auto &p: teams)
         h ^= (std::hash<std::string>{}(p->Name) << 1);
     h ^= time(nullptr);
-    int id = static_cast<int>(h);
-    return id * id;
+    return static_cast<int>(h);
 }
 
 
@@ -122,7 +121,7 @@ void Fight::ExecuteTurn(TurnPair mons) {
             log.Append(winner->Name + " wins!", LType::Major);
             return;
         }
-        if (turnIndex >= Config::Fight::maxTurnCount) {
+        if (turnIndex >= Config::Fight::MaxTurnCount) {
             log.Append("Draw — the fight timed out, no winners!", LType::Major);
             EndFight();
             return;

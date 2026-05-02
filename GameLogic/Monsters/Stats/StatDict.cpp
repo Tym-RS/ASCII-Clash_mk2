@@ -1,17 +1,17 @@
 #include "StatDict.h"
 
 nlohmann::json StatDict::ToJson() const {
-    nlohmann::json j;
+    nlohmann::json data;
     for (int i = 0; i < static_cast<int>(Stat::COUNT); i++)
-        j[StatInfos[i].AsString] = values[i];
-    return j;
+        data[StatInfos[i].AsString] = values[i];
+    return data;
 }
 
-StatDict StatDict::FromJson(nlohmann::json j) {
+StatDict StatDict::FromJson(nlohmann::json data) {
     std::array<int, static_cast<int>(Stat::COUNT)> initValues{};
     for (int i = 0; i < static_cast<int>(Stat::COUNT); i++)
-        initValues[i] = j.contains(StatInfos[i].AsString)
-                            ? j[StatInfos[i].AsString].get<int>()
+        initValues[i] = data.contains(StatInfos[i].AsString)
+                            ? data[StatInfos[i].AsString].get<int>()
                             : StatInfos[i].DefaultValue;
     return StatDict(initValues);
 }
@@ -28,8 +28,8 @@ void StatDict::ReceiveEXP(const int amount) {
     }
 }
 
-int StatDict::Get(const Stat stat) const {
-    return values.at(static_cast<int>(stat));
+int StatDict::Get(const Stat toGet) const {
+    return values.at(static_cast<int>(toGet));
 }
 
 bool StatDict::TryLevel(const Stat toLevel, std::string *err) {

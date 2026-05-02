@@ -72,7 +72,7 @@
             border: 2px solid var(--dim);
             padding: 1rem 1.1rem;
             cursor: pointer;
-            min-height: 56px;
+            min-height: calc(56px * var(--scale));
             margin-bottom: 0.5rem;
             text-align: left;
             display: flex;
@@ -115,7 +115,7 @@
             border: 1px solid rgba(0, 122, 31, 0.25);
             padding: 0.6rem;
             cursor: pointer;
-            min-height: 48px;
+            min-height: calc(48px * var(--scale));
             transition: color 0.15s, border-color 0.15s;
         }
 
@@ -123,7 +123,6 @@
             color: var(--red);
             border-color: var(--red);
         }
-
 
         #btnFight {
             justify-content: center;
@@ -137,7 +136,6 @@
         #btnFight:hover {
             box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
         }
-
     </style>
 </head>
 <body>
@@ -145,7 +143,7 @@
     <h1 id="greeting">loading...</h1>
 
     <div class="score-cabinet">
-        <div class="cabinet-header">── YOUR SCORE ──</div>
+        <div class="cabinet-header" id="splashText">── YOUR SCORE ──</div>
         <div class="cabinet-body">
             <span class="score-number" id="scoreNum">00000000</span>
             <div class="score-sub">TOTAL POINTS</div>
@@ -172,27 +170,33 @@
 <script src="/utils.js"></script>
 <script>
     async function init() {
-        const res = await post('/ViewMe');
-        if (!res || !res.ok) {
+        const [meRes, splashRes] = await Promise.all([
+            post('/ViewMe'),
+            post('/SplashText'),
+        ]);
+        if (!meRes || !meRes.ok) {
             window.location.href = '/index.html';
             return;
         }
-
-        const data = await res.json();
+        const data = await meRes.json();
         document.getElementById('greeting').textContent = 'hello, ' + data.Username + '!';
         document.getElementById('scoreNum').textContent = String(data.Score).padStart(8, '0');
         document.title = 'ASCII Clash — ' + data.Username;
+        if (splashRes && splashRes.ok) {
+            const t = await splashRes.text();
+            document.getElementById('splashText').textContent = t;
+        }
     }
 
-    document.getElementById('btnFight').onclick = () => location.href = '/Play.html';
-    document.getElementById('btnTeams').onclick = () => location.href = '/PlayerTeams.html';
-    document.getElementById('btnLeader').onclick = () => location.href = '/LeaderBoard.html';
-    document.getElementById('btnAbout').onclick = () => location.href = '/About.html';
+    document.getElementById('btnFight').addEventListener('click',  () => location.href = '/Play.html');
+    document.getElementById('btnTeams').addEventListener('click',  () => location.href = '/PlayerTeams.html');
+    document.getElementById('btnLeader').addEventListener('click', () => location.href = '/LeaderBoard.html');
+    document.getElementById('btnAbout').addEventListener('click',  () => location.href = '/About.html');
 
-    document.getElementById('btnLogout').onclick = async () => {
+    document.getElementById('btnLogout').addEventListener('click', async () => {
         await post('/Logout');
         location.href = '/index.html';
-    };
+    });
 
     init();
 </script>

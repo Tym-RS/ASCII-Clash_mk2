@@ -1,17 +1,18 @@
 #include "GameServer.h"
-#include "./ServerHelpers.h"
+#include "ServerHelpers.h"
 #include "Endpoints.h"
+#include "_SplashTexts.h"
 #include "Database/TableDefs.h"
-#include "Imports/inja.hpp"
 
 #define SESSION_ID const auto sessionID = GetCookie("session", req, res); if(sessionID.empty()) {RETURN_RES("Login required.", 401)}
 
 using namespace httplib;
+using namespace Database;
 static const std::string SESSION_COOKIE = "session";
 
 
 GameServer::GameServer(std::unique_ptr<MemoryManager> memory) : memory(std::move(memory)) {
-    server.set_mount_point("/", ServerMountPath);
+    server.set_mount_point("/", Config::Server::MountPath);
 
     // Register ALL endpoints to their POST paths.
 #define X(path) server.Post("/"#path, [this](REQ_PARAMS) { this->path(req, res); });
@@ -41,7 +42,12 @@ void GameServer::Leaderboard(const Request &req, Response &res) {
 }
 
 void GameServer::GameInfo(const Request &req, Response &res) {
-    RETURN_RES(GetGameDescriptionsJSON().dump(), 200);
+    static const auto gameDescription = GetGameDescriptionsJSON().dump();
+    RETURN_RES(gameDescription, 200);
+}
+
+void GameServer::SplashText(const Request &req, Response &res) {
+    RETURN_RES(GetSplashText(), 200);
 }
 
 void GameServer::Login(const Request &req, Response &res) {
@@ -59,10 +65,10 @@ void GameServer::Register(const Request &req, Response &res) {
     REQUIRE_PARAMS("username", "password");
     const std::string usr = req.get_param_value("username");
     const std::string pwd = req.get_param_value("password");
-    if (!std::regex_match(usr, Config::Player::usernameRegex))
+    if (!std::regex_match(usr, Config::Player::UsernameRegex))
         RETURN_RES("Username must be 1–15 chars and may only contain letters, numbers, _ ( ) - : ; [ ] { }", 400);
 
-    if (!std::regex_match(pwd, Config::Player::passwordRegex))
+    if (!std::regex_match(pwd, Config::Player::PasswordRegex))
         RETURN_RES("Password must be at least 5 characters and contain at least one special character", 400);
 
     std::string err;
@@ -75,7 +81,7 @@ void GameServer::Register(const Request &req, Response &res) {
 
 void GameServer::Logout(const Request &req, Response &res) {
     SESSION_ID;
-    std::string err = "";
+    std::string err;
     memory->TryLogoutPlayer(sessionID, &err);
     DeleteCookie(SESSION_COOKIE, req, res);
     RETURN_RES(err, 200);
@@ -126,7 +132,7 @@ void GameServer::CreateTeam(const Request &req, Response &res) {
     if (!player) RETURN_RES(err, 404);
 
     const std::string name = req.get_param_value("name");
-    if (!std::regex_match(name, Config::Player::usernameRegex))
+    if (!std::regex_match(name, Config::Player::UsernameRegex))
         RETURN_RES("Team name must be 1–15 chars and may only contain letters, numbers, _ ( ) - : ; [ ] { }", 400);
     const auto team = player->TryGetCreateNewTeam(name, &err);
     if (!team) RETURN_RES(err, 400)
@@ -181,9 +187,9 @@ void GameServer::CreateMonster(const Request &req, Response &res) {
     const auto team = player->TryGetTeam(id, &err);
     if (!team) RETURN_RES(err, 404)
     const std::string name = req.get_param_value("name");
-    if (!std::regex_match(name, Config::Player::usernameRegex))
+    if (!std::regex_match(name, Config::Player::UsernameRegex))
         RETURN_RES("Monster name must be 1–15 chars and may only contain letters, numbers, _ ( ) - : ; [ ] { }", 400);
-    const MonsterType type = StringMonsterTyperMap.at(req.get_param_value("type"));
+    const MonsterType type = StringMonsterTypeMap.at(req.get_param_value("type"));
     const int newID = team->TryGetNewMonsterID(name, type, &err);
     if (newID == -1) RETURN_RES(err, 400);
     memory->Save(player);
@@ -336,4 +342,9 @@ void GameServer::SubmitFightAction(const Request &req, Response &res) {
 
 void GameServer::Run() {
     server.listen("0.0.0.0", 8080);
+}
+
+void GameServer::Stop() {
+    server.stop();
+    memory->Cleanup();
 }

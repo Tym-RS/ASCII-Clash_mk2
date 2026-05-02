@@ -1,8 +1,18 @@
-#ifndef ASCII_CLASH_STATS_H
-#define ASCII_CLASH_STATS_H
-#include "Config.h"
+#pragma once
+
 #include <unordered_map>
 #include <string>
+
+
+#define MONSTER_STATS \
+X(Damage,  "How much damage each hit from this monster deals.", 1, 2) \
+X(Offense, "How likely it is, for an attack from this monster to land.", 1, 1) \
+X(Defence, "How likely it is, that this monster dodges an incoming attack.", 1, 1) \
+X(Special, "Different for each monster. Refer to its description.", 1, 2) \
+X(Health,  "The maximum HP this monster can have.", 10, 2) \
+X(Exp,     "How much EXP this monster has. (It needs [2*Level] to level up.)", 0, 0) \
+X(Level,   "The current level of this monster. (This times two is how much EXP it needs to gain a new level.)", 1, 0) \
+X(SkillPoints, "Each skill-point can level one stat of it's monster. A new point is gained on level-up.", 3, 0)
 
 
 enum class Stat {
@@ -39,5 +49,3 @@ const inline std::unordered_map<std::string, Stat> StringStatMap = {
     MONSTER_STATS
 #undef X
 };
-
-#endif

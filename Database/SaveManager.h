@@ -1,5 +1,5 @@
-#ifndef ASCII_CLASH_SAVEMANAGER_H
-#define ASCII_CLASH_SAVEMANAGER_H
+#pragma once
+
 #include <sqlite3.h>
 #include <string>
 #include <nlohmann/json.hpp>
@@ -30,9 +30,9 @@ namespace Database {
         ~SaveManager();
 
     private:
+        void EnsureColumns(const std::string &table, const nlohmann::json &j) const;
+
         const std::string DBPaths = "Database/DB_Files/";
         sqlite3 *db{};
     };
 }
-
-#endif

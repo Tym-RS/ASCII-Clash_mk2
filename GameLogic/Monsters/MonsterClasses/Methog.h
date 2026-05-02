@@ -1,8 +1,6 @@
-#ifndef ASCII_CLASH_METHOG_H
-#define ASCII_CLASH_METHOG_H
+#pragma once
 
 #include "../MonsterBase.h"
-#include "../../MathHelpers.h"
 
 class Methog final : public TypedMonster<MonsterType::Methog> {
 public:
@@ -25,5 +23,3 @@ protected:
         return true;
     }
 };
-
-#endif

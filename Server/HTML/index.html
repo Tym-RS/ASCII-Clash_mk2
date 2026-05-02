@@ -17,15 +17,16 @@
       font-size: 1.1rem;
       border-bottom: none;
       padding-bottom: 0;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
     }
 
     .logo-block h1::after { content: none; }
 
     .logo-tagline {
-      font-size: 0.38rem;
+      font-size: 0.42rem;
       color: var(--dim);
       letter-spacing: 0.2em;
+      min-height: 1.4em;
     }
 
     .register-block {
@@ -40,7 +41,7 @@
     }
 
     .register-block span {
-      font-size: 0.42rem;
+      font-size: 0.45rem;
       color: var(--text);
       opacity: 0.7;
       line-height: 1.9;
@@ -49,16 +50,15 @@
     .register-block a {
       font-size: 0.55rem;
       color: var(--green);
-      min-height: unset;
       white-space: nowrap;
       flex-shrink: 0;
       text-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
       border: 1px solid var(--green);
-      padding: 0.5rem 0.6rem;
+      padding: 0.5rem 0.7rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 44px;
+      min-height: calc(44px * var(--scale));
       transition: background 0.15s, color 0.15s;
     }
 
@@ -73,7 +73,7 @@
 
   <div class="logo-block">
     <h1>ASCII Clash</h1>
-    <div class="logo-tagline">-----PLACEHOLDER_TEXT------</div>
+    <div class="logo-tagline" id="splashText">...</div>
   </div>
 
   <div class="msg-error" id="err"></div>
@@ -82,7 +82,7 @@
     <div class="field">
       <label for="username">Username</label>
       <input type="text" id="username" name="username"
-             autocomplete="username" spellcheck="false" required>
+             autocomplete="username" spellcheck="false" required maxlength="15">
     </div>
     <div class="field">
       <label for="password">Password</label>
@@ -103,6 +103,10 @@
 <script>
   const form = document.getElementById('loginForm');
   const err  = document.getElementById('err');
+
+  post('/SplashText').then(r => r && r.ok ? r.text() : null).then(t => {
+    if (t) document.getElementById('splashText').textContent = t;
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -14,7 +14,7 @@ public:
 
     explicit Team(std::string name, int id);
 
-    static Team FromJson(const nlohmann::json &j);
+    static Team FromJson(const nlohmann::json &data);
 
     [[nodiscard]] nlohmann::json ToJson() const override;
 
@@ -22,7 +22,7 @@ public:
 
     [[nodiscard]] int CurrentFightID() const { return currentFightID; }
 
-    [[nodiscard]] int GetLvl() const;
+    [[nodiscard]] int GetAverageLvl() const;
 
     int TryGetNewMonsterID(const std::string &name, MonsterType type, ERR_PARAM);
 

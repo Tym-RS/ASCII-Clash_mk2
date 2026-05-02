@@ -1,6 +1,6 @@
 #include "MemoryManager.h"
 #include <iostream>
-#include "AI_Names.h"
+#include "_AINames.h"
 #include "Database/TableDefs.h"
 #include "GameLogic/Monsters/CreateMonster.h"
 
@@ -39,7 +39,7 @@ bool MemoryManager::TryOpenFightRequest(const std::shared_ptr<Team> &team, std::
         SET_ERR("Team already in a fight.");
         return false;
     }
-    if (team->GetLvl() <= 0) {
+    if (team->GetAverageLvl() <= 0) {
         SET_ERR("Empty teams canNOT fight.");
         return false;
     }
@@ -65,7 +65,7 @@ nlohmann::json MemoryManager::GetFightRequests() {
         j.push_back({
             {COL(Teams, name), t->Name},
             {COL(Teams, ID), t->ID},
-            {"Level", t->GetLvl()},
+            {"Level", t->GetAverageLvl()},
         });
     }
     return j;
@@ -74,7 +74,8 @@ nlohmann::json MemoryManager::GetFightRequests() {
 void MemoryManager::CleanFightRequests() {
     std::vector<int> toErase;
     for (auto &[id, team]: fightRequestingTeams)
-        if (team.expired() || team.lock()->IsInFight() || team.lock()->GetLvl() <= 0)
+        if (team.expired()) toErase.push_back(id);
+        else if (const auto t = team.lock(); t->IsInFight() || t->GetAverageLvl() <= 0)
             toErase.push_back(id);
     for (const int id: toErase) fightRequestingTeams.erase(id);
 }
@@ -82,20 +83,20 @@ void MemoryManager::CleanFightRequests() {
 std::shared_ptr<Team> MemoryManager::GetNewAITeam(const int level) const {
     std::lock_guard lock(mtx);
     static int teamID = -1;
-    auto t = std::make_shared<Team>(GetRandomTeamName(), teamID--);
-    const auto mons = &t->Monsters();
+    auto team = std::make_shared<Team>(GetRandomTeamName(), teamID--);
+    const auto mons = &team->Monsters();
     for (int i = 0; i < mons->size(); i++) {
         const auto type = static_cast<MonsterType>(rand() % static_cast<int>(MonsterType::COUNT));
         auto mon = CreateMonster(GetRandomMonName(), i, type);
-        const int offsetLvl = level / mons->size() + (rand() % 3 - 1);
+        const int offsetLvl = std::max(level + (rand() % 6 - 4), 0);
         mon->GetStatDict()->ReceiveEXP(offsetLvl * (offsetLvl + 1));
         while (mon->GetStatDict()->Get(Stat::SkillPoints) > 0)
             mon->GetStatDict()->TryLevel(static_cast<Stat>(rand() % static_cast<int>(Stat::COUNT)));
         mon->Reset();
         (*mons)[i] = std::move(mon);
     }
-    t->AutoFight = true;
-    return t;
+    team->AutoFight = true;
+    return team;
 }
 
 Fight *MemoryManager::TryGetFight(const int id, std::string *err) {
@@ -124,9 +125,6 @@ Fight *MemoryManager::TryGetFight(const int id, std::string *err) {
             loadedTeams[teamID] = team;
         }
         participants.push_back(team);
-        if (team) continue;
-        SET_ERR("Not all Teams in the Fight could be loaded.");
-        return nullptr;
     }
     loadedFights[id] = std::make_unique<Fight>(Fight::FromJson(fightJ, participants));
     return loadedFights[id].get();
@@ -150,34 +148,33 @@ int MemoryManager::TryCreateFight(const std::vector<int> &teamIDs, std::string *
     for (const int id: teamIDs) {
         if (id == -1) continue;
         auto t = TryGetTeam(id, err);
-        if (!t || t->IsInFight() || t->GetLvl() <= 0) {
+        if (!t || t->IsInFight() || t->GetAverageLvl() <= 0) {
             SET_ERR("Not all required teams could be found and are available.");
             return -1;
         }
-        if (const int teamLvl = t->GetLvl(); teamLvl > bestTeamLevel) bestTeamLevel = teamLvl;
+        if (const int teamLvl = t->GetAverageLvl(); teamLvl > bestTeamLevel) bestTeamLevel = teamLvl;
         teams.push_back(t);
     }
-
     for (const int id: teamIDs)
         if (id == -1) teams.push_back(GetNewAITeam(bestTeamLevel));
 
-    auto f = std::make_unique<Fight>(teams);
-    const auto id = f->ID;
-    Save(f.get());
-    loadedFights[f->ID] = std::move(f);
+    auto fight = std::make_unique<Fight>(teams);
+    const auto id = fight->ID;
+    Save(fight.get());
+    loadedFights[fight->ID] = std::move(fight);
     return id;
 }
 
 nlohmann::json MemoryManager::GetLeaderboard(const int limit) const {
     const auto players = saveManager->LoadWhere(TABLE(Players), {}, COL(Players, score), limit);
-    nlohmann::json j = nlohmann::json::array();
-    for (auto p: players)
-        j.push_back({
-                {COL(Players, username), p[COL(Players, username)]},
-                {COL(Players, score), p[COL(Players, score)]},
-            }
-        );
-    return j;
+    nlohmann::json data = nlohmann::json::array();
+    for (auto &p: players)
+        data.push_back({
+            {COL(Players, username), p[COL(Players, username)]},
+            {COL(Players, score), p[COL(Players, score)]},
+        });
+    std::ranges::reverse(data);
+    return data;
 }
 
 bool MemoryManager::TryRegisterPlayer(std::string username, const int password, std::string *err) const {
@@ -190,7 +187,7 @@ bool MemoryManager::TryRegisterPlayer(std::string username, const int password, 
     }
     const int id = saveManager->NextID(TABLE(Players));
     if (!saveManager->TrySaveTo(TABLE(Players), PlayerSession(id, username, password).ToJson(), err))
-        std::cerr << err << std::endl;
+        std::cerr << *err << std::endl;
 
     return true;
 }
@@ -242,7 +239,7 @@ void MemoryManager::TryLogoutPlayer(const std::string &cookie, std::string *err)
         return;
     }
     if (!saveManager->TrySaveTo(TABLE(Players), loadedSessions[cookie]->ToJson(), err))
-        std::cerr << err << std::endl;
+        std::cerr << *err << std::endl;
     loadedSessions.erase(cookie);
     Cleanup();
 }
@@ -360,7 +357,7 @@ void MemoryManager::DebugDump() {
             if (const auto team = weakTeam.lock()) {
                 std::cout << "  Team ID    : " << id << "\n";
                 std::cout << "  Name       : " << team->Name << "\n";
-                std::cout << "  Level      : " << team->GetLvl() << "\n";
+                std::cout << "  Level      : " << team->GetAverageLvl() << "\n";
                 std::cout << "  In Fight   : " << (team->IsInFight()
                                                        ? "yes (Fight #" + std::to_string(team->CurrentFightID()) + ")"
                                                        : "no") << "\n";
@@ -384,7 +381,7 @@ void MemoryManager::DebugDump() {
             if (const auto team = weakTeam.lock()) {
                 std::cout << "  Team ID    : " << id << "\n";
                 std::cout << "  Name       : " << team->Name << "\n";
-                std::cout << "  Level      : " << team->GetLvl() << "\n";
+                std::cout << "  Level      : " << team->GetAverageLvl() << "\n";
             } else {
                 std::cout << "  Team ID    : " << id << "  [EXPIRED weak_ptr]\n";
             }

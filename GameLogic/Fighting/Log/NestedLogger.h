@@ -1,11 +1,17 @@
-#ifndef ASCII_CLASH_LOGGER_H
-#define ASCII_CLASH_LOGGER_H
+#pragma once
+
 #include <map>
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "Config.h"
 #include "Database/JsonSavable.h"
+
+#define LOG_TYPES \
+X(Major) \
+X(Minor) \
+X(Nerdy)
+
 
 enum class LType {
 #define X(type) type,
@@ -16,7 +22,7 @@ enum class LType {
 extern const std::map<std::string, LType> LogTypeStringMap;
 extern const std::map<LType, std::string> StringLogTypeMap;
 
-class NestedLogger final : JsonSavable {
+class NestedLogger final : public JsonSavable {
 public:
     NestedLogger();
 
@@ -40,7 +46,7 @@ private:
 
         void Append(const LogEntry &toAdd);
 
-        static LogEntry FromJson(nlohmann::json j);
+        static LogEntry FromJson(nlohmann::json data);
 
         [[nodiscard]] nlohmann::json ToJson() const override;
 
@@ -49,12 +55,8 @@ private:
     private:
         std::string header;
         LType importance;
-
-    private:
         std::vector<LogEntry> logs;
     };
 
     std::vector<LogEntry> log;
 };
-
-#endif

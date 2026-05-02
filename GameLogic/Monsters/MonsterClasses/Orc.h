@@ -1,8 +1,5 @@
-#ifndef ASCII_CLASH_ORC_H
-#define ASCII_CLASH_ORC_H
-
+#pragma once
 #include "../MonsterBase.h"
-#include "../../MathHelpers.h"
 
 class Orc final : public TypedMonster<MonsterType::Orc> {
 public:
@@ -23,5 +20,3 @@ private:
     static constexpr float specialCounter = 12.f;
     static constexpr int headbuttDamage = 1;
 };
-
-#endif

@@ -8,14 +8,12 @@ include_directories(${CMAKE_SOURCE_DIR})
 find_package(SQLite3 REQUIRED)
 add_executable(ASCII_Clash main.cpp
         Config.h
-        GameLogic/MathHelpers.h
         GameLogic/Fighting/Log/NestedLogger.h
-        GameLogic/Monsters/Stats/Stats.h
         GameLogic/Fighting/Fight.h
         Server/GameServer/GameServer.h
         Server/PlayerSession/PlayerSession.h
         Server/PlayerSession/PlayerSession.cpp
-        GameLogic/Monsters/Descriptions.h
+        GameLogic/Monsters/MonsterClasses/_MonDescriptions.h
         Server/GameServer/ServerHelpers.h
         GameLogic/Monsters/Stats/StatDict.h
         GameLogic/Fighting/Log/NestedLogger.cpp
@@ -36,6 +34,8 @@ add_executable(ASCII_Clash main.cpp
         Server/MemoryManager/MemoryManager.h
         ErrHelper.h
         Server/GameServer/Endpoints.h
-        Server/MemoryManager/AI_Names.h
+        Server/MemoryManager/_AINames.h
+        GameLogic/Monsters/Stats/_StatDescriptions.h
+        Server/GameServer/_SplashTexts.h
 )
 target_link_libraries(ASCII_Clash SQLite::SQLite3)

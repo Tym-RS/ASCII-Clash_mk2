@@ -1,5 +1,4 @@
-#ifndef ASCII_CLASH_TABLEDEFS_H
-#define ASCII_CLASH_TABLEDEFS_H
+#pragma once
 #include <array>
 #include <map>
 #include <string>
@@ -10,7 +9,7 @@
 namespace Database {
 #define TABLES          X(Teams) X(Players) X(Fights)
 #define Players_COLS    Y(ID, "INTEGER PRIMARY KEY") Y(username, "TEXT UNIQUE NOT NULL") Y(password, "INTEGER NOT NULL") Y(score, "INTEGER DEFAULT 0") Y(teams, "TEXT")
-#define Teams_COLS      Y(ID, "INTEGER PRIMARY KEY") Y(name, "TEXT NOT NULL UNIQUE") Y(monsters, "TEXT") Y(in_fight, "BOOLEAN DEFAULT FALSE NOT NULL") Y(fight_id, "INTEGER") Y(auto_fight, "BOOLEAN DEFAULT FALSE NOT NULL")
+#define Teams_COLS      Y(ID, "INTEGER PRIMARY KEY") Y(name, "TEXT NOT NULL") Y(monsters, "TEXT") Y(in_fight, "BOOLEAN DEFAULT FALSE NOT NULL") Y(fight_id, "INTEGER") Y(auto_fight, "BOOLEAN DEFAULT FALSE NOT NULL")
 #define Fights_COLS     Y(ID, "INTEGER PRIMARY KEY") Y(is_ongoing, "BOOLEAN DEFAULT TRUE NOT NULL") Y(winner, "TEXT") \
                         Y(active_team_name, "TEXT") Y(turn, "INTEGER DEFAULT 0 NOT NULL") Y(log, "TEXT") Y(participants, "TEXT NOT NULL")
 
@@ -51,4 +50,3 @@ namespace Database {
 #undef Y
     };
 }
-#endif

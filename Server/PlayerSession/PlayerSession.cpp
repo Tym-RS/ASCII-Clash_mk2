@@ -31,11 +31,11 @@ nlohmann::json PlayerSession::ToJson() const {
     };
 }
 
-PlayerSession PlayerSession::FromJson(nlohmann::json j,
+PlayerSession PlayerSession::FromJson(nlohmann::json data,
                                       std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> &teams) {
-    const int id = j.at(JStr(ID)).get<int>();
-    const std::string username = j.at(JStr(username)).get<std::string>();
-    const int password = j.at(JStr(password)).get<int>();
+    const int id = data.at(JStr(ID)).get<int>();
+    const std::string username = data.at(JStr(username)).get<std::string>();
+    const int password = data.at(JStr(password)).get<int>();
     auto player = PlayerSession(id, username, password);
     player.teams = std::move(teams);
     return player;
@@ -50,14 +50,15 @@ bool PlayerSession::CheckActive() {
 
 int PlayerSession::GetScore() const {
     int score = 0;
-    for (const auto t: teams)
-        if (t)
-            for (const auto &m: t->Monsters())
-                if (m) score += m->GetStatDict()->Get(Stat::Level);
+    for (const auto &t: teams) {
+        if (!t) continue;
+        for (const auto &m: t->Monsters())
+            if (m) score += m->GetStatDict()->Get(Stat::Level);
+    }
     return score;
 }
 
-std::shared_ptr<Team> PlayerSession::TryGetCreateNewTeam(std::string name, std::string *err) {
+std::shared_ptr<Team> PlayerSession::TryGetCreateNewTeam(const std::string &name, std::string *err) {
     int nextFree = 0;
     for (; nextFree < teams.size(); nextFree++)
         if (!teams[nextFree]) break;

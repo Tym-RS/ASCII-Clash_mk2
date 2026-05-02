@@ -35,3 +35,4 @@
 Database/DB_Files/*
 !Database/DB_Files/.gitignore
 ThePlan2ElectricBogalloo.md
+/.idea

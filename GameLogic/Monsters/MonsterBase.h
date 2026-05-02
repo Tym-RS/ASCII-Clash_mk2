@@ -1,11 +1,23 @@
-#ifndef ASCII_CLASH_MONSTERBASE_H
-#define ASCII_CLASH_MONSTERBASE_H
+#pragma once
 
 #include <string>
 #include "Stats/StatDict.h"
 #include "../Fighting/Log/NestedLogger.h"
-#include "Descriptions.h"
+#include "MonsterClasses/_MonDescriptions.h"
 #include "Database/JsonSavable.h"
+
+inline float SoftRatio(const int value, const int counter) { return static_cast<float>(value) / (counter + value); }
+
+
+inline float CalculateHitChance(const int attack, const int defence) {
+    const float attackBonus = SoftRatio(attack, Config::Monster::AttackStatCounter);
+    const float defenseBonus = SoftRatio(defence, Config::Monster::DefenseStatCounter);
+    const float chance = Config::Monster::BaseHitChance + attackBonus - defenseBonus;
+    return chance > Config::Monster::MinHitChance ? chance : Config::Monster::MinHitChance;
+}
+
+inline float RandomPCT() { return static_cast<float>(rand()) / RAND_MAX; }
+
 
 class Monster : public JsonSavable {
 public:
@@ -14,9 +26,10 @@ public:
     const MonsterType Type;
     [[nodiscard]] virtual bool IsHealer() const { return false; }
 
-    static std::unique_ptr<Monster> FromJson(const nlohmann::json &j);
+    static std::unique_ptr<Monster> FromJson(const nlohmann::json &data);
 
     [[nodiscard]] nlohmann::json ToJson() const override;
+
 
     [[nodiscard]] StatDict *GetStatDict() { return &stats; }
 
@@ -40,19 +53,21 @@ public:
 
     bool ReceiveAttack(Monster *from);
 
-    virtual void OnTurnStart() {
-    }
+    virtual void OnTurnStart() { return; }
 
-    virtual void OnDeath() {
-    }
+    virtual void OnDeath() { return; }
 
     ~Monster() override = default;
 
 protected:
     void TryLog(const std::string &message, LType type) const;
 
-    virtual void ResetImpl() {
-    }
+
+    [[nodiscard]] virtual nlohmann::json ToJsonImpl() const { return {}; }
+
+    virtual void FromJsonImpl(const nlohmann::json &j) { return; }
+
+    virtual void ResetImpl() { return; }
 
     virtual void AttackImpl(Monster *target);
 
@@ -84,5 +99,3 @@ public:
         : Monster(name, id, T, stats) {
     }
 };
-
-#endif

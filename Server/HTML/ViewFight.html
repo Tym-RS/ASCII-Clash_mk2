@@ -6,13 +6,15 @@
     <title>ASCII Clash — Fight</title>
     <link rel="stylesheet" href="/style.css">
     <style>
+        .container { max-width: calc(680px * var(--scale)); padding: 2.5rem 2rem; }
+
         /* ── Winner banner ── */
         .winner-banner {
             border: 2px solid var(--green);
             background: rgba(0, 255, 65, 0.06);
             text-align: center;
-            padding: 1.1rem;
-            margin-bottom: 0.85rem;
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
         }
 
         .winner-banner.defeat {
@@ -21,412 +23,279 @@
         }
 
         .winner-title {
-            font-size: 0.8rem;
-            color: var(--green);
-            text-shadow: 0 0 12px rgba(0, 255, 65, 0.6);
-            margin-bottom: 0.45rem;
+            font-size: 1.1rem; color: var(--green);
+            text-shadow: 0 0 14px rgba(0, 255, 65, 0.6);
+            margin-bottom: 0.6rem; line-height: 1.6;
         }
 
         .winner-banner.defeat .winner-title {
             color: var(--red);
-            text-shadow: 0 0 12px rgba(255, 68, 68, 0.5);
+            text-shadow: 0 0 14px rgba(255, 68, 68, 0.5);
         }
 
         .winner-sub {
-            font-size: 0.4rem;
-            color: var(--dim);
+            font-size: 0.55rem; color: var(--dim);
             animation: blink 1.3s step-end infinite;
         }
 
+        /* ── Post-fight actions ── */
+        .post-fight-actions {
+            display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+        }
+
+        .post-fight-actions .btn-primary { flex: 1; font-size: 0.55rem; min-width: 8rem; }
+
+        .btn-manage-fight {
+            flex: 1; min-width: 8rem;
+            background: transparent; color: var(--green);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.55rem;
+            border: 2px solid var(--green);
+            padding: 0.9rem 1rem; cursor: pointer;
+            min-height: calc(48px * var(--scale));
+            transition: background 0.15s;
+        }
+
+        .btn-manage-fight:hover { background: rgba(0, 255, 65, 0.07); }
+
         /* ── Turn bar ── */
         .turn-bar {
-            font-size: 0.4rem;
-            color: var(--dim);
-            text-align: center;
-            padding: 0.45rem 0.5rem;
-            margin-bottom: 0.75rem;
+            font-size: 0.55rem; color: var(--dim); text-align: center;
+            padding: 0.7rem 0.8rem; margin-bottom: 1.25rem;
             border: 1px solid rgba(0, 122, 31, 0.2);
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.2); line-height: 1.6;
         }
 
         .turn-bar.yours {
-            color: var(--green);
-            border-color: var(--green);
+            color: var(--green); border-color: var(--green);
             background: rgba(0, 255, 65, 0.03);
             animation: blink 1s step-end infinite;
         }
 
         /* ── Team blocks ── */
         .team-block {
-            border: 1px solid rgba(0, 122, 31, 0.25);
+            border: 1px solid rgba(0, 122, 31, 0.3);
             background: rgba(0, 0, 0, 0.3);
-            padding: 0.6rem;
-            margin-bottom: 0.6rem;
+            padding: 1rem; margin-bottom: 1rem;
         }
 
-        .team-block.my-team {
-            border-color: rgba(0, 200, 60, 0.4);
-        }
-
-        .team-block.active-team {
-            border-color: var(--green);
-        }
+        .team-block.my-team     { border-color: rgba(0, 200, 60, 0.5); }
+        .team-block.active-team { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,65,0.07); }
 
         .team-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.35rem;
-            border-bottom: 1px solid rgba(0, 122, 31, 0.18);
-            flex-wrap: wrap;
-            gap: 0.3rem;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 0.75rem; padding-bottom: 0.55rem;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.2);
+            flex-wrap: wrap; gap: 0.5rem;
         }
 
-        .team-label {
-            font-size: 0.4rem;
-            color: var(--green);
-        }
-
-        .team-label.enemy {
-            color: var(--red);
-        }
-
-        .team-label.enemy-idle {
-            color: var(--dim);
-        }
+        .team-label            { font-size: 0.55rem; color: var(--green); }
+        .team-label.enemy      { color: var(--red); }
+        .team-label.enemy-idle { color: var(--dim); }
 
         .autofight-toggle {
-            font-size: 0.33rem;
-            background: transparent;
-            border: 1px solid var(--dim);
-            color: var(--dim);
+            font-size: 0.42rem; background: transparent;
+            border: 1px solid var(--dim); color: var(--dim);
             font-family: 'Press Start 2P', monospace;
-            padding: 0.18rem 0.35rem;
-            cursor: pointer;
-            min-height: 24px;
+            padding: 0.3rem 0.5rem; cursor: pointer;
+            min-height: calc(32px * var(--scale));
             transition: color 0.15s, border-color 0.15s;
         }
 
-        .autofight-toggle.on {
-            color: var(--green);
-            border-color: var(--green);
-        }
+        .autofight-toggle.on { color: var(--green); border-color: var(--green); }
 
         /* ── Monster row ── */
         .fight-mon {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 0.3rem;
-            margin-bottom: 0.2rem;
-            border: 1px solid transparent;
-            position: relative;
+            display: flex; align-items: center; gap: 0.85rem;
+            padding: 0.7rem 0.6rem; margin-bottom: 0.4rem;
+            border: 1px solid transparent; position: relative;
             transition: background 0.1s, border-color 0.1s;
         }
 
-        .fight-mon:last-child {
-            margin-bottom: 0;
-        }
-
-        .fight-mon.dead {
-            opacity: 0.28;
-        }
-
-        .fight-mon.selectable {
-            cursor: pointer;
-        }
+        .fight-mon:last-child { margin-bottom: 0; }
+        .fight-mon.dead       { opacity: 0.28; }
+        .fight-mon.selectable { cursor: pointer; }
 
         .fight-mon.selectable:hover {
             background: rgba(0, 122, 31, 0.07);
-            border-color: rgba(0, 122, 31, 0.2);
+            border-color: rgba(0, 122, 31, 0.25);
         }
 
-        /* Selected attacker — green left bar */
         .fight-mon.is-atk {
-            background: rgba(0, 255, 65, 0.06);
-            border-color: rgba(0, 255, 65, 0.5);
-            box-shadow: inset 3px 0 0 var(--green);
+            background: rgba(0, 255, 65, 0.07);
+            border-color: rgba(0, 255, 65, 0.55);
+            box-shadow: inset 4px 0 0 var(--green);
         }
 
-        /* Selected defender — red left bar */
         .fight-mon.is-def {
-            background: rgba(255, 68, 68, 0.06);
-            border-color: rgba(255, 68, 68, 0.5);
-            box-shadow: inset 3px 0 0 var(--red);
+            background: rgba(255, 68, 68, 0.07);
+            border-color: rgba(255, 68, 68, 0.55);
+            box-shadow: inset 4px 0 0 var(--red);
         }
 
         @keyframes sel-flash {
-            0% {
-                opacity: 1;
-            }
-            35% {
-                opacity: 0.45;
-            }
-            100% {
-                opacity: 1;
-            }
+            0%   { opacity: 1; }
+            35%  { opacity: 0.4; }
+            100% { opacity: 1; }
         }
 
-        .fight-mon.flash {
-            animation: sel-flash 0.22s ease;
-        }
+        .fight-mon.flash { animation: sel-flash 0.22s ease; }
 
         .fight-mon-img {
-            width: 34px;
-            height: 34px;
+            width: calc(56px * var(--scale));
+            height: calc(56px * var(--scale));
             object-fit: contain;
             image-rendering: pixelated;
             flex-shrink: 0;
+            border: 1px solid rgba(0, 122, 31, 0.2);
         }
 
-        .fight-mon-info {
-            flex: 1;
-            min-width: 0;
-        }
+        .fight-mon-info { flex: 1; min-width: 0; }
 
         .fight-mon-name {
-            font-size: 0.4rem;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 0.18rem;
+            font-size: 0.6rem; color: var(--text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 0.15rem;
         }
 
-        .fight-mon-name.dead {
+        .fight-mon-name.dead { color: var(--dim); }
+
+        .fight-mon-type {
+            font-size: 0.38rem;
             color: var(--dim);
+            text-transform: uppercase;
+            margin-bottom: 0.2rem;
         }
 
         .hp-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.3rem;
-            color: var(--dim);
-            margin-bottom: 0.1rem;
+            display: flex; justify-content: space-between;
+            font-size: 0.42rem; color: var(--dim); margin-bottom: 0.2rem;
         }
 
-        .hp-bar {
-            height: 4px;
-            background: rgba(0, 122, 31, 0.1);
-            border: 1px solid rgba(0, 122, 31, 0.2);
-        }
+        .hp-bar { height: 7px; background: rgba(0, 122, 31, 0.1); border: 1px solid rgba(0, 122, 31, 0.25); }
+        .hp-fill { height: 100%; background: var(--green); transition: width 0.3s ease; }
+        .hp-fill.low  { background: #ffe000; }
+        .hp-fill.crit { background: var(--red); }
 
-        .hp-fill {
-            height: 100%;
-            background: var(--green);
-            transition: width 0.3s ease;
-        }
-
-        .hp-fill.low {
-            background: #ffe000;
-        }
-
-        .hp-fill.crit {
-            background: var(--red);
-        }
-
-        /* Badge shown on selected row */
         .sel-badge {
-            font-size: 0.3rem;
-            padding: 0.1rem 0.28rem;
-            flex-shrink: 0;
-            display: none;
-            white-space: nowrap;
+            font-size: 0.42rem; padding: 0.18rem 0.4rem;
+            flex-shrink: 0; display: none; white-space: nowrap;
         }
 
-        .fight-mon.is-atk .sel-badge-atk {
-            display: block;
-            color: #000;
-            background: var(--green);
-        }
-
-        .fight-mon.is-def .sel-badge-def {
-            display: block;
-            color: #fff;
-            background: var(--red);
-        }
+        .fight-mon.is-atk .sel-badge-atk { display: block; color: #000; background: var(--green); }
+        .fight-mon.is-def .sel-badge-def { display: block; color: #fff; background: var(--red); }
 
         /* ── Action panel ── */
         .action-panel {
-            border: 1px solid var(--green);
+            border: 2px solid var(--green);
             background: rgba(0, 122, 31, 0.03);
-            padding: 0.7rem;
-            margin-bottom: 0.75rem;
+            padding: 1.1rem; margin-bottom: 1.1rem;
         }
 
         .action-title {
-            font-size: 0.4rem;
-            color: var(--green);
-            margin-bottom: 0.55rem;
+            font-size: 0.6rem; color: var(--green);
+            margin-bottom: 0.9rem; padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.25);
         }
 
-        /* Two-slot summary */
-        .sel-summary {
-            display: flex;
-            gap: 0.4rem;
-            margin-bottom: 0.55rem;
-        }
+        .sel-summary { display: flex; gap: 0.75rem; margin-bottom: 0.85rem; }
 
         .sel-slot {
-            flex: 1;
-            border: 1px solid rgba(0, 122, 31, 0.2);
-            padding: 0.3rem 0.4rem;
-            background: rgba(0, 0, 0, 0.25);
-            min-width: 0;
-            transition: border-color 0.15s;
+            flex: 1; border: 1px solid rgba(0, 122, 31, 0.2);
+            padding: 0.65rem 0.75rem; background: rgba(0, 0, 0, 0.3);
+            min-width: 0; transition: border-color 0.2s;
         }
 
-        .sel-slot.set-atk {
-            border-color: rgba(0, 255, 65, 0.45);
-        }
-
-        .sel-slot.set-def {
-            border-color: rgba(255, 68, 68, 0.45);
-        }
+        .sel-slot.set-atk { border-color: rgba(0, 255, 65, 0.5); }
+        .sel-slot.set-def { border-color: rgba(255, 68, 68, 0.5); }
 
         .sel-slot-lbl {
-            font-size: 0.3rem;
-            color: var(--dim);
-            margin-bottom: 0.12rem;
+            font-size: 0.38rem; color: var(--dim);
+            margin-bottom: 0.3rem; letter-spacing: 0.05em;
         }
 
-        .sel-slot-val {
-            font-size: 0.38rem;
-            color: rgba(0, 122, 31, 0.45);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .sel-slot-val.set {
-        }
-
-        .sel-slot-val.set.atk {
-            color: var(--green);
-        }
-
-        .sel-slot-val.set.def {
-            color: var(--red);
-        }
-
-        .msg-error {
+        .sel-slot-name {
+            font-size: 0.5rem; color: rgba(0, 122, 31, 0.4);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             margin-bottom: 0.5rem;
         }
+
+        .sel-slot-name.atk { color: var(--green); }
+        .sel-slot-name.def { color: var(--red); }
+
+        .sel-slot-stats {
+            display: none; grid-template-columns: 1fr 1fr;
+            gap: 0.25rem 0.5rem;
+            border-top: 1px solid rgba(0, 122, 31, 0.15);
+            padding-top: 0.45rem;
+        }
+
+        .sel-slot-stats.visible { display: grid; }
+
+        .stat-item { display: flex; justify-content: space-between; gap: 0.3rem; font-size: 0.4rem; }
+        .stat-item-key { color: var(--dim); }
+        .stat-item-val { color: var(--text); }
+
+        .msg-error { margin-bottom: 0.75rem; }
 
         /* ── Log section ── */
-        .log-section {
-            margin-top: 0.75rem;
-        }
+        .log-section { margin-top: 1.1rem; }
 
         .log-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            margin-bottom: 0.5rem;
-            flex-wrap: wrap;
+            display: flex; align-items: center; gap: 0.5rem;
+            margin-bottom: 0.75rem; flex-wrap: wrap;
         }
 
-        .log-ctrl-lbl {
-            font-size: 0.33rem;
-            color: rgba(0, 122, 31, 0.5);
-            margin-right: auto;
-        }
+        .log-ctrl-lbl { font-size: 0.42rem; color: rgba(0, 122, 31, 0.5); margin-right: auto; }
 
         .log-toggle {
-            background: transparent;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.3rem;
-            border: 1px solid rgba(0, 122, 31, 0.25);
-            color: rgba(0, 122, 31, 0.4);
-            padding: 0.22rem 0.4rem;
-            cursor: pointer;
-            min-height: 26px;
+            background: transparent; font-family: 'Press Start 2P', monospace;
+            font-size: 0.4rem; border: 1px solid rgba(0, 122, 31, 0.3);
+            color: rgba(0, 122, 31, 0.45); padding: 0.3rem 0.55rem; cursor: pointer;
+            min-height: calc(32px * var(--scale));
             transition: color 0.15s, border-color 0.15s;
         }
 
-        .log-toggle.on {
-            color: var(--green);
-            border-color: var(--green);
-        }
+        .log-toggle.on { color: var(--green); border-color: var(--green); }
 
         .log-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            max-height: calc(320px * var(--scale));
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            padding-right: 0.2rem;
         }
 
         .log-turn {
-            border: 1px solid rgba(0, 122, 31, 0.15);
+            border: 1px solid rgba(0, 122, 31, 0.18);
             background: rgba(0, 0, 0, 0.2);
         }
 
         .log-turn-hdr {
-            padding: 0.38rem 0.5rem;
-            font-size: 0.36rem;
-            color: var(--text);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            user-select: none;
-            transition: background 0.1s;
+            padding: 0.6rem 0.75rem; font-size: 0.48rem; color: var(--text);
+            cursor: pointer; display: flex; align-items: center; gap: 0.55rem;
+            user-select: none; transition: background 0.1s; line-height: 1.6;
         }
 
-        .log-turn-hdr:hover {
-            background: rgba(0, 122, 31, 0.05);
-        }
+        .log-turn-hdr:hover { background: rgba(0, 122, 31, 0.05); }
 
-        .log-arrow {
-            font-size: 0.32rem;
-            color: var(--dim);
-            flex-shrink: 0;
-            transition: transform 0.15s;
-        }
+        .log-arrow { font-size: 0.42rem; color: var(--dim); flex-shrink: 0; transition: transform 0.15s; }
+        .log-arrow.open { transform: rotate(90deg); }
 
-        .log-arrow.open {
-            transform: rotate(90deg);
-        }
-
-        .log-body {
-            display: none;
-            padding: 0.28rem 0.5rem 0.4rem;
-            border-top: 1px solid rgba(0, 122, 31, 0.1);
-        }
-
-        .log-body.open {
-            display: block;
-        }
+        .log-body { display: none; padding: 0.4rem 0.75rem 0.65rem; border-top: 1px solid rgba(0, 122, 31, 0.12); }
+        .log-body.open { display: block; }
 
         .log-entry {
-            font-size: 0.34rem;
-            padding: 0.15rem 0;
-            border-bottom: 1px solid rgba(0, 122, 31, 0.05);
-            line-height: 1.7;
+            font-size: 0.45rem; padding: 0.22rem 0;
+            border-bottom: 1px solid rgba(0, 122, 31, 0.06);
+            line-height: 1.9;
         }
 
-        /* Importance styling */
-        .log-entry.major {
-            color: var(--text);
-        }
-
-        .log-entry.minor {
-            color: rgba(0, 200, 55, 0.65);
-        }
-
-        .log-entry.nerdy {
-            color: rgba(0, 140, 45, 0.4);
-            font-size: 0.31rem;
-        }
-
-        /* Sub-entries indented */
-        .log-entry.sub {
-            padding-left: 0.7rem;
-        }
-
-        .log-entry.hidden {
-            display: none;
-        }
+        .log-entry.major  { color: var(--text); }
+        .log-entry.minor  { color: rgba(0, 200, 55, 0.6); }
+        .log-entry.nerdy  { color: rgba(0, 140, 45, 0.4); font-size: 0.4rem; }
+        .log-entry.sub    { padding-left: 1rem; }
+        .log-entry.hidden { display: none; }
     </style>
 </head>
 <body>
@@ -438,19 +307,21 @@
 
 <script src="/utils.js"></script>
 <script>
-    const params = new URLSearchParams(location.search);
+    const params  = new URLSearchParams(location.search);
     const fightID = params.get('fight_id');
-    const teamID = parseInt(params.get('team_id'));
+    const teamID  = parseInt(params.get('team_id'));
     if (!fightID || !teamID) location.href = '/Play.html';
 
-    let pollCount = 0;
-    let pollTimer = null;
-    let showMinor = true;
-    let showNerdy = false;
-    let selectedAtk = null;   // number | null  (null = nothing selected)
+    let pollCount   = 0;
+    let pollTimer   = null;
+    let showMinor   = true;
+    let showNerdy   = false;
+    let selectedAtk = null;
     let selectedDef = null;
-    let atkName = null;
-    let defName = null;
+    let atkMon      = null;
+    let defMon      = null;
+
+    const DISPLAY_STATS = ['Level', 'Health', 'Damage', 'Offense', 'Defence'];
 
     // ── Polling ───────────────────────────────────────────
     function getInterval() {
@@ -466,26 +337,22 @@
 
     async function fetchAndRender() {
         pollCount++;
-        const res = await postForm('/ViewFight', {fight_ID: fightID});
-        if (!res || !res.ok) {
-            schedulePoll();
-            return;
-        }
+        const res = await postForm('/ViewFight', { fight_ID: fightID });
+        if (!res || !res.ok) { schedulePoll(); return; }
         const fight = await res.json();
 
         document.getElementById('loadingMsg').style.display = 'none';
-        document.getElementById('content').style.display = 'block';
+        document.getElementById('content').style.display   = 'block';
 
         render(fight);
 
-        if (!fight.is_ongoing) {
-            clearTimeout(pollTimer);
-            return;
-        }
-
-        const myTeam = fight.participants.find(t => t.ID === teamID);
+        if (!fight.is_ongoing) { clearTimeout(pollTimer); return; }
+        const myTeam   = fight.participants.find(t => t.ID === teamID);
         const isMyTurn = myTeam && fight.active_team_name === myTeam.name;
-        if (!isMyTurn) schedulePoll();
+        // Always schedule a poll — on the player's turn use a long heartbeat so
+        // we catch server-side advances (timeout cleanup, auto-fight, etc.)
+        clearTimeout(pollTimer);
+        pollTimer = setTimeout(fetchAndRender, isMyTurn ? 30000 : getInterval());
     }
 
     // ── Render ────────────────────────────────────────────
@@ -493,66 +360,60 @@
         const content = document.getElementById('content');
         content.innerHTML = '';
 
-        // ── Winner / draw banner ──
+        const fightSize = fight.participants.length;
+
+        // Winner / draw banner
         if (!fight.is_ongoing) {
             const banner = document.createElement('div');
             if (fight.winner) {
                 const won = fight.winner.ID === teamID;
                 banner.className = 'winner-banner' + (won ? '' : ' defeat');
                 banner.innerHTML = `
-          <div class="winner-title">${won ? '>> YOU WIN! <<' : fight.winner.Name + ' WINS'}</div>
-          <div class="winner-sub">${won ? 'VICTORY' : 'DEFEAT'}</div>`;
+                    <div class="winner-title">${won ? '>> YOU WIN! <<' : fight.winner.Name + ' WINS'}</div>
+                    <div class="winner-sub">${won ? 'VICTORY' : 'DEFEAT'}</div>
+                `;
             } else {
                 banner.className = 'winner-banner';
-                banner.innerHTML = `<div class="winner-title">-- DRAW --</div>`;
+                banner.innerHTML = '<div class="winner-title">-- DRAW --</div>';
             }
             content.appendChild(banner);
         }
 
-        // ── Turn bar ──
-        const myTeam = fight.participants.find(t => t.ID === teamID);
+        // Turn bar
+        const myTeam   = fight.participants.find(t => t.ID === teamID);
         const isMyTurn = myTeam && fight.is_ongoing && fight.active_team_name === myTeam.name;
 
         const turnBar = document.createElement('div');
-        turnBar.className = 'turn-bar' + (isMyTurn ? ' yours' : '');
+        turnBar.className   = 'turn-bar' + (isMyTurn ? ' yours' : '');
         turnBar.textContent = isMyTurn ? '>> YOUR TURN <<' : fight.active_team_name + "'s turn";
         content.appendChild(turnBar);
 
-        // ── Teams ──
+        // Teams
         fight.participants.forEach(team => {
-            const isMe = team.ID === teamID;
+            const isMe     = team.ID === teamID;
             const isActive = team.name === fight.active_team_name;
 
             const block = document.createElement('div');
             block.className = 'team-block' + (isMe ? ' my-team' : '') + (isActive ? ' active-team' : '');
 
-            // Header
             const hdr = document.createElement('div');
             hdr.className = 'team-header';
 
             const lbl = document.createElement('span');
-            if (isMe) {
-                lbl.className = 'team-label';
-                lbl.textContent = team.name + ' (you)';
-            } else if (isActive) {
-                lbl.className = 'team-label enemy';
-                lbl.textContent = team.name;
-            } else {
-                lbl.className = 'team-label enemy-idle';
-                lbl.textContent = team.name;
-            }
+            lbl.className   = 'team-label' + (isMe ? '' : isActive ? ' enemy' : ' enemy-idle');
+            lbl.textContent = team.name + (isMe ? ' (you)' : '');
             hdr.appendChild(lbl);
 
             if (isMe && fight.is_ongoing) {
                 const af = document.createElement('button');
-                af.className = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
+                af.className   = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
                 af.textContent = 'AUTO: ' + (team.auto_fight ? 'ON' : 'OFF');
                 af.addEventListener('click', async () => {
                     const nv = team.auto_fight ? 0 : 1;
-                    const r = await postForm('/SetAutoFight', {team_ID: teamID, set_to: nv});
+                    const r  = await postForm('/SetAutoFight', { team_ID: teamID, set_to: nv });
                     if (r && r.ok) {
                         team.auto_fight = nv === 1;
-                        af.className = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
+                        af.className   = 'autofight-toggle' + (team.auto_fight ? ' on' : '');
                         af.textContent = 'AUTO: ' + (team.auto_fight ? 'ON' : 'OFF');
                     }
                 });
@@ -560,44 +421,41 @@
             }
             block.appendChild(hdr);
 
-            // Monsters
             team.monsters.forEach(mon => {
                 if (!mon) return;
-                const alive = mon.current_health > 0;
-                const maxHP = mon.stats.Health;
-                const curHP = mon.current_health;
-                const hpPct = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
+                const alive   = mon.current_health > 0;
+                const maxHP   = mon.stats.Health;
+                const curHP   = mon.current_health;
+                const hpPct   = maxHP > 0 ? Math.max(0, Math.min((curHP / maxHP) * 100, 100)) : 0;
                 const fillCls = hpPct <= 25 ? 'crit' : hpPct <= 50 ? 'low' : '';
 
                 const row = document.createElement('div');
-                row.className = 'fight-mon' + (alive ? '' : ' dead');
-                row.dataset.id = mon.ID;
+                row.className    = 'fight-mon' + (alive ? '' : ' dead');
+                row.dataset.id   = mon.ID;
                 row.dataset.name = mon.name;
 
-                // Restore saved selection highlights across re-renders
                 if (mon.ID === selectedAtk) row.classList.add('is-atk');
                 if (mon.ID === selectedDef) row.classList.add('is-def');
 
                 row.innerHTML = `
-          <img class="fight-mon-img"
-               src="/images/${encodeURIComponent(mon.type)}.png"
-               alt="${mon.type}"
-               onerror="this.src='/images/NA.png'">
-          <div class="fight-mon-info">
-            <div class="fight-mon-name${alive ? '' : ' dead'}">${mon.name}</div>
-            <div class="hp-row"><span>HP</span><span>${curHP} / ${maxHP}</span></div>
-            <div class="hp-bar"><div class="hp-fill ${fillCls}" style="width:${hpPct}%"></div></div>
-          </div>
-          <span class="sel-badge sel-badge-atk">ATK</span>
-          <span class="sel-badge sel-badge-def">TGT</span>`;
+                    <img class="fight-mon-img"
+                         src="/images/${encodeURIComponent(mon.type)}.png"
+                         alt="${mon.type}"
+                         onerror="this.src='/images/NA.png'">
+                    <div class="fight-mon-info">
+                        <div class="fight-mon-name${alive ? '' : ' dead'}">${mon.name}</div>
+                        <div class="fight-mon-type">${mon.type}</div>
+                        <div class="hp-row"><span>HP</span><span>${curHP} / ${maxHP}</span></div>
+                        <div class="hp-bar"><div class="hp-fill ${fillCls}" style="width:${hpPct}%"></div></div>
+                    </div>
+                    <span class="sel-badge sel-badge-atk">ATK</span>
+                    <span class="sel-badge sel-badge-def">TGT</span>
+                `;
 
                 if (isMyTurn && alive) {
                     row.classList.add('selectable');
-                    if (isMe) {
-                        row.addEventListener('click', () => pickAttacker(mon.ID, mon.name));
-                    } else {
-                        row.addEventListener('click', () => pickDefender(mon.ID, mon.name));
-                    }
+                    if (isMe) row.addEventListener('click', () => pickAttacker(mon));
+                    else      row.addEventListener('click', () => pickDefender(mon));
                 }
 
                 block.appendChild(row);
@@ -606,30 +464,48 @@
             content.appendChild(block);
         });
 
-        // ── Action panel (my turn only) ──
         if (isMyTurn) content.appendChild(buildActionPanel());
 
-        // ── Fight log ──
-        renderLog(content, fight.log);
+        // Post-fight action buttons
+        if (!fight.is_ongoing) {
+            const actions = document.createElement('div');
+            actions.className = 'post-fight-actions';
+
+            const btnAgain = document.createElement('button');
+            btnAgain.className   = 'btn-primary';
+            btnAgain.textContent = '[ PLAY AGAIN ]';
+            btnAgain.addEventListener('click', () => location.href = '/Play.html');
+
+            const btnManage = document.createElement('button');
+            btnManage.className   = 'btn-manage-fight';
+            btnManage.textContent = '[ MANAGE TEAM ]';
+            btnManage.addEventListener('click', () => location.href = '/ViewTeam.html?id=' + teamID);
+
+            actions.appendChild(btnAgain);
+            actions.appendChild(btnManage);
+            content.appendChild(actions);
+        }
+
+        renderLog(content, fight.log, fightSize);
     }
 
-    // ── Selection helpers ─────────────────────────────────
-    function pickAttacker(id, name) {
-        selectedAtk = id;
-        atkName = name;
+    // ── Selection ─────────────────────────────────────────
+    function pickAttacker(mon) {
+        selectedAtk = mon.ID;
+        atkMon      = mon;
         document.querySelectorAll('.fight-mon').forEach(r => {
             r.classList.remove('is-atk');
-            if (parseInt(r.dataset.id) === id) flash(r, 'is-atk');
+            if (parseInt(r.dataset.id) === mon.ID) flash(r, 'is-atk');
         });
         syncActionPanel();
     }
 
-    function pickDefender(id, name) {
-        selectedDef = id;
-        defName = name;
+    function pickDefender(mon) {
+        selectedDef = mon.ID;
+        defMon      = mon;
         document.querySelectorAll('.fight-mon').forEach(r => {
             r.classList.remove('is-def');
-            if (parseInt(r.dataset.id) === id) flash(r, 'is-def');
+            if (parseInt(r.dataset.id) === mon.ID) flash(r, 'is-def');
         });
         syncActionPanel();
     }
@@ -639,7 +515,7 @@
         el.classList.remove('flash');
         void el.offsetWidth;
         el.classList.add('flash');
-        el.addEventListener('animationend', () => el.classList.remove('flash'), {once: true});
+        el.addEventListener('animationend', () => el.classList.remove('flash'), { once: true });
     }
 
     // ── Action panel ─────────────────────────────────────
@@ -647,43 +523,66 @@
         const panel = document.createElement('div');
         panel.className = 'action-panel';
         panel.innerHTML = `
-      <div class="action-title">YOUR TURN</div>
-      <div class="sel-summary">
-        <div class="sel-slot" id="atkSlot">
-          <div class="sel-slot-lbl">ATTACKER</div>
-          <div class="sel-slot-val" id="atkVal">---</div>
-        </div>
-        <div class="sel-slot" id="defSlot">
-          <div class="sel-slot-lbl">TARGET</div>
-          <div class="sel-slot-val" id="defVal">---</div>
-        </div>
-      </div>
-      <div class="msg-error" id="actionErr"></div>
-      <button class="btn-primary" id="btnSubmit" disabled>[ FIGHT ]</button>`;
+            <div class="action-title">YOUR TURN</div>
+            <div class="sel-summary">
+                <div class="sel-slot" id="atkSlot">
+                    <div class="sel-slot-lbl">ATTACKER</div>
+                    <div class="sel-slot-name" id="atkName">---</div>
+                    <div class="sel-slot-stats" id="atkStats"></div>
+                </div>
+                <div class="sel-slot" id="defSlot">
+                    <div class="sel-slot-lbl">TARGET</div>
+                    <div class="sel-slot-name" id="defName">---</div>
+                    <div class="sel-slot-stats" id="defStats"></div>
+                </div>
+            </div>
+            <div class="msg-error" id="actionErr"></div>
+            <button class="btn-primary" id="btnSubmit" disabled>[ FIGHT ]</button>
+        `;
         panel.querySelector('#btnSubmit').addEventListener('click', submitAction);
         syncActionPanel();
         return panel;
     }
 
+    function renderStatGrid(container, mon) {
+        container.innerHTML = '';
+        if (!mon || !mon.stats) return;
+        DISPLAY_STATS.forEach(key => {
+            if (!(key in mon.stats)) return;
+            const item = document.createElement('div');
+            item.className = 'stat-item';
+            item.innerHTML = `<span class="stat-item-key">${key.toUpperCase()}</span><span class="stat-item-val">${mon.stats[key]}</span>`;
+            container.appendChild(item);
+        });
+    }
+
     function syncActionPanel() {
-        const atkSlot = document.getElementById('atkSlot');
-        const defSlot = document.getElementById('defSlot');
-        const atkVal = document.getElementById('atkVal');
-        const defVal = document.getElementById('defVal');
-        const btn = document.getElementById('btnSubmit');
-        if (!atkVal) return;
+        const atkSlot  = document.getElementById('atkSlot');
+        const defSlot  = document.getElementById('defSlot');
+        const atkName  = document.getElementById('atkName');
+        const defName  = document.getElementById('defName');
+        const atkStats = document.getElementById('atkStats');
+        const defStats = document.getElementById('defStats');
+        const btn      = document.getElementById('btnSubmit');
+        if (!atkName) return;
 
         const hasAtk = selectedAtk !== null;
         const hasDef = selectedDef !== null;
 
         atkSlot.className = 'sel-slot' + (hasAtk ? ' set-atk' : '');
         defSlot.className = 'sel-slot' + (hasDef ? ' set-def' : '');
-        atkVal.className = 'sel-slot-val' + (hasAtk ? ' set atk' : '');
-        defVal.className = 'sel-slot-val' + (hasDef ? ' set def' : '');
-        atkVal.textContent = hasAtk ? atkName : '---';
-        defVal.textContent = hasDef ? defName : '---';
 
-        // KEY FIX: use !== null so monster ID 0 works correctly
+        atkName.className   = 'sel-slot-name' + (hasAtk ? ' atk' : '');
+        defName.className   = 'sel-slot-name' + (hasDef ? ' def' : '');
+        atkName.textContent = hasAtk ? atkMon.name : '---';
+        defName.textContent = hasDef ? defMon.name : '---';
+
+        if (hasAtk) { renderStatGrid(atkStats, atkMon); atkStats.classList.add('visible'); }
+        else          atkStats.classList.remove('visible');
+
+        if (hasDef) { renderStatGrid(defStats, defMon); defStats.classList.add('visible'); }
+        else          defStats.classList.remove('visible');
+
         if (btn) btn.disabled = !(hasAtk && hasDef);
     }
 
@@ -697,8 +596,8 @@
         if (btn) btn.disabled = true;
 
         const res = await postForm('/SubmitFightAction', {
-            fight_ID: fightID,
-            team_ID: teamID,
+            fight_ID:    fightID,
+            team_ID:     teamID,
             attacker_ID: selectedAtk,
             defender_ID: selectedDef,
         });
@@ -710,77 +609,81 @@
             return;
         }
 
-        // Clear selections after a successful action
         selectedAtk = null;
         selectedDef = null;
-        atkName = null;
-        defName = null;
-        pollCount = 0;
+        atkMon      = null;
+        defMon      = null;
+        pollCount   = 0;
         await fetchAndRender();
+
+        // Scroll to log after action
+        setTimeout(() => {
+            const logList = document.getElementById('logList');
+            if (logList) {
+                logList.scrollTop = logList.scrollHeight;
+                logList.closest('.log-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 50);
     }
 
-    // ── Log rendering ─────────────────────────────────────
-    function renderLog(parent, log) {
+    // ── Log ───────────────────────────────────────────────
+    function renderLog(parent, log, fightSize) {
         const section = document.createElement('div');
         section.className = 'log-section';
 
         const lbl = document.createElement('div');
-        lbl.className = 'section-label';
+        lbl.className   = 'section-label';
         lbl.textContent = 'Fight Log';
         section.appendChild(lbl);
 
-        // Toggles
         const controls = document.createElement('div');
         controls.className = 'log-controls';
-
         const ctrlLbl = document.createElement('span');
-        ctrlLbl.className = 'log-ctrl-lbl';
+        ctrlLbl.className   = 'log-ctrl-lbl';
         ctrlLbl.textContent = 'show:';
         controls.appendChild(ctrlLbl);
 
         function makeToggle(label, get, set) {
             const btn = document.createElement('button');
             const refresh = () => {
-                btn.className = 'log-toggle' + (get() ? ' on' : '');
+                btn.className   = 'log-toggle' + (get() ? ' on' : '');
                 btn.textContent = label + ': ' + (get() ? 'ON' : 'OFF');
             };
-            btn.addEventListener('click', () => {
-                set(!get());
-                refresh();
-                refreshLogVis();
-            });
+            btn.addEventListener('click', () => { set(!get()); refresh(); refreshLogVis(); });
             refresh();
             return btn;
         }
 
         controls.appendChild(makeToggle('DETAILS', () => showMinor, v => showMinor = v));
-        controls.appendChild(makeToggle('NERDY', () => showNerdy, v => showNerdy = v));
+        controls.appendChild(makeToggle('NERDY',   () => showNerdy, v => showNerdy = v));
         section.appendChild(controls);
 
         const list = document.createElement('div');
         list.className = 'log-list';
-        list.id = 'logList';
+        list.id        = 'logList';
 
         if (!log || !log.turns || log.turns.length === 0) {
-            list.innerHTML = '<div style="font-size:0.36rem;color:var(--dim);padding:0.5rem 0">No entries yet.</div>';
+            list.innerHTML = '<div style="font-size:0.5rem;color:var(--dim);padding:0.75rem 0">No entries yet.</div>';
         } else {
+            const totalTurns = log.turns.length;
             log.turns.forEach((turn, i) => {
-                const isLast = (i === log.turns.length - 1);
-                const el = document.createElement('div');
+                // Keep the last fightSize turns open (one round)
+                const isOpen = i >= totalTurns - fightSize;
+                const el     = document.createElement('div');
                 el.className = 'log-turn';
 
                 const hdr = document.createElement('div');
                 hdr.className = 'log-turn-hdr';
                 hdr.innerHTML = `
-          <span class="log-arrow${isLast ? ' open' : ''}">▶</span>
-          <span>Turn ${i + 1}: ${turn.header}</span>`;
+                    <span class="log-arrow${isOpen ? ' open' : ''}">▶</span>
+                    <span>Turn ${i + 1}: ${turn.header}</span>
+                `;
 
                 const body = document.createElement('div');
-                body.className = 'log-body' + (isLast ? ' open' : '');
+                body.className = 'log-body' + (isOpen ? ' open' : '');
 
-                if (turn.details && turn.details.length > 0) {
+                if (turn.details && turn.details.length > 0)
                     addLogEntries(body, turn.details, false);
-                }
 
                 hdr.addEventListener('click', () => {
                     const open = body.classList.toggle('open');
@@ -796,13 +699,16 @@
         section.appendChild(list);
         parent.appendChild(section);
         refreshLogVis();
+
+        // Scroll to bottom of log on render
+        setTimeout(() => { list.scrollTop = list.scrollHeight; }, 0);
     }
 
     function addLogEntries(parent, entries, isSub) {
         entries.forEach(e => {
             const imp = (e.importance || 'minor').toLowerCase();
-            const el = document.createElement('div');
-            el.className = 'log-entry ' + imp + (isSub ? ' sub' : '');
+            const el  = document.createElement('div');
+            el.className   = 'log-entry ' + imp + (isSub ? ' sub' : '');
             el.dataset.imp = imp;
             el.textContent = (isSub ? '> ' : '') + e.header;
             parent.appendChild(el);
@@ -812,13 +718,22 @@
 
     function refreshLogVis() {
         document.querySelectorAll('.log-entry').forEach(el => {
-            const imp = el.dataset.imp;
+            const imp  = el.dataset.imp;
             const hide = (imp === 'minor' && !showMinor) || (imp === 'nerdy' && !showNerdy);
             el.classList.toggle('hidden', hide);
         });
     }
 
     // ── Boot ──────────────────────────────────────────────
+    // Re-sync immediately when the player returns to this tab
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            pollCount = 0;
+            clearTimeout(pollTimer);
+            fetchAndRender();
+        }
+    });
+
     fetchAndRender();
 </script>
 </body>

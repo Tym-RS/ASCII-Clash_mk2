@@ -2,7 +2,7 @@
 #define ASCII_CLASH_ENDPOINTS_H
 
 
-#define ENDPOINTS X(Leaderboard) X(GameInfo) \
+#define ENDPOINTS X(Leaderboard) X(GameInfo) X(SplashText) \
     X(Login) X(Register) X(Logout) X(ViewMe) \
     X(CreateTeam) X(DeleteTeam) X(ViewTeam) X(SetAutoFight) \
     X(CreateMonster) X(DeleteMonster) X(LevelMonster) X(ViewMonster) \

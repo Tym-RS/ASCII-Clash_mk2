@@ -11,21 +11,21 @@ public:
 
     [[nodiscard]] nlohmann::json ToJson() const override;
 
-    static PlayerSession FromJson(nlohmann::json j,
+    static PlayerSession FromJson(nlohmann::json data,
                                   std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> &teams);
 
     [[nodiscard]] bool CheckActive();
 
     [[nodiscard]] int GetScore() const;
 
-    std::shared_ptr<Team> TryGetCreateNewTeam(std::string name, ERR_PARAM);
+    std::shared_ptr<Team> TryGetCreateNewTeam(const std::string& name, ERR_PARAM);
 
     Team *TryGetTeam(int id, ERR_PARAM) const;
 
     bool TryDeleteTeam(int id, ERR_PARAM);
 
     std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> *Teams() { return &teams; }
-    const std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> *Teams() const { return &teams; }
+    [[nodiscard]] const std::array<std::shared_ptr<Team>, Config::Player::TeamAmount> *Teams() const { return &teams; }
 
     const int PlayerID;
     const std::string SessionID;

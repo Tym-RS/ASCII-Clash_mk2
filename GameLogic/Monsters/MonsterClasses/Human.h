@@ -1,8 +1,6 @@
-#ifndef ASCII_CLASH_HUMAN_H
-#define ASCII_CLASH_HUMAN_H
+#pragma once
 
 #include "../MonsterBase.h"
-#include "../../MathHelpers.h"
 
 class Human final : public TypedMonster<MonsterType::Human> {
 public:
@@ -24,5 +22,3 @@ protected:
 private:
     static constexpr float specialCounter = 15.f;
 };
-
-#endif

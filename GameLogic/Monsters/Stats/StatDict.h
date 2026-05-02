@@ -1,7 +1,7 @@
 #ifndef ASCII_CLASH_STATDICT_H
 #define ASCII_CLASH_STATDICT_H
 #include "Database/JsonSavable.h"
-#include "Stats.h"
+#include "_StatDescriptions.h"
 #include <string>
 #include <array>
 
@@ -11,13 +11,13 @@ class StatDict final : public JsonSavable {
 public:
     StatDict() = default;
 
-    static StatDict FromJson(nlohmann::json j);
+    static StatDict FromJson(nlohmann::json data);
 
     [[nodiscard]] nlohmann::json ToJson() const override;
 
     void ReceiveEXP(int amount);
 
-    [[nodiscard]] int Get(Stat stat) const;
+    [[nodiscard]] int Get(Stat toGet) const;
 
     bool TryLevel(Stat toLevel, ERR_PARAM);
 

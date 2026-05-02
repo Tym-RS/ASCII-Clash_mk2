@@ -3,7 +3,6 @@
 
 #include "CreateMonster.h"
 #include "GameLogic/Monsters/MonsterBase.h"
-#include "../MathHelpers.h"
 
 Monster::Monster(std::string name, const int id, const MonsterType type)
     : ID(id), Name(std::move(name)), Type(type) {
@@ -25,16 +24,18 @@ nlohmann::json Monster::ToJson() const {
         {"current_health", currentHealth},
         {"healing_done", healingDone},
         {"stats", stats.ToJson()},
+        {"misc", ToJsonImpl()},
     };
 }
 
-std::unique_ptr<Monster> Monster::FromJson(const nlohmann::json &j) {
-    const MonsterType type = StringMonsterTyperMap.at(j["type"].get<std::string>());
-    const auto stats = StatDict::FromJson(j["stats"]);
-    auto m = CreateMonster(j["name"].get<std::string>(), j["ID"].get<int>(), type, &stats);
-    m->currentHealth = j["current_health"].get<int>();
-    m->healingDone = j["healing_done"].get<int>();
-    return m;
+std::unique_ptr<Monster> Monster::FromJson(const nlohmann::json &data) {
+    const MonsterType type = StringMonsterTypeMap.at(data["type"]);
+    const auto stats = StatDict::FromJson(data.value("stats", nlohmann::json::object()));
+    auto mon = CreateMonster(data.value("name", "John C."), data["ID"].get<int>(), type, &stats);
+    mon->currentHealth = data.value("current_health", mon->GetStatDict()->Get(Stat::Health));
+    mon->healingDone = data.value("healing_done", 0);
+    if (data.contains("misc")) mon->FromJsonImpl(data["misc"]);
+    return mon;
 }
 
 void Monster::Reset() {
@@ -68,9 +69,9 @@ void Monster::Heal(int amount) {
         TryLog(Name + "'s healing is fully exhausted.", LType::Major);
         return;
     }
-    if (amount > headroom) {
+    if (amount > headroom)
         TryLog(Name + " has " + std::to_string(headroom) + " HP of healing left.", LType::Nerdy);
-    }
+
 
     amount = std::clamp(amount, 0, headroom);
     HealImpl(amount);

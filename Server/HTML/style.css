@@ -3,7 +3,14 @@
     src: url('/fonts/Press_Start_2P/PressStart2P-Regular.ttf') format('truetype');
 }
 
+/* ══════════════════════════════════════════════════════════
+   SCALE — adjust this single value to resize the entire UI.
+   1.0 = original, 1.35 = 35% bigger (default), 1.5 = 50% bigger
+   ══════════════════════════════════════════════════════════ */
 :root {
+    --scale: 1.15;
+    font-size: calc(16px * var(--scale));
+
     --green: #00ff41;
     --dark: #0a0a0a;
     --panel: #0d0d0d;
@@ -44,7 +51,7 @@ body::after {
 
 /* ─── Container ──────────────────────────── */
 .container {
-    max-width: 460px;
+    max-width: calc(460px * var(--scale));
     width: 100%;
     border: 2px solid var(--green);
     padding: 2.5rem 2rem;
@@ -116,7 +123,7 @@ textarea:focus {
 
 textarea {
     resize: vertical;
-    min-height: 80px;
+    min-height: 5rem;
     line-height: 1.8;
 }
 
@@ -131,8 +138,13 @@ textarea {
     padding: 0.9rem 1rem;
     cursor: pointer;
     box-shadow: 4px 4px 0 var(--dim);
-    min-height: 48px;
+    min-height: calc(48px * var(--scale));
     text-transform: uppercase;
+    transition: box-shadow 0.1s;
+}
+
+.btn-primary:hover:not(:disabled) {
+    box-shadow: 2px 2px 0 var(--dim);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -145,36 +157,14 @@ textarea {
     cursor: not-allowed;
 }
 
-.btn-danger {
-    background: transparent;
-    color: var(--red);
-    font-family: 'Press Start 2P', monospace;
-    font-size: 0.55rem;
-    border: 2px solid var(--red);
-    padding: 0.75rem;
-    cursor: pointer;
-    min-height: 48px;
-    width: 100%;
-    text-transform: uppercase;
-    transition: background 0.15s;
-}
-
-.btn-danger:hover {
-    background: rgba(255, 68, 68, 0.07);
-}
-
-.btn-danger:active {
-    transform: translate(2px, 2px);
-}
-
 .btn-small {
     background: transparent;
     color: var(--text);
     font-family: 'Press Start 2P', monospace;
     font-size: 0.75rem;
     border: 1px solid var(--dim);
-    width: 2rem;
-    height: 2rem;
+    width: 2.2rem;
+    height: 2.2rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -235,7 +225,7 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 48px;
+    min-height: calc(48px * var(--scale));
     font-size: 0.55rem;
     font-family: 'Press Start 2P', monospace;
     transition: color 0.15s, text-shadow 0.15s;
@@ -250,7 +240,7 @@ a:hover {
 .nav-back {
     display: inline-flex;
     align-items: center;
-    min-height: 32px;
+    min-height: calc(32px * var(--scale));
     font-size: 0.5rem;
     color: var(--dim);
     cursor: pointer;
@@ -266,7 +256,6 @@ a:hover {
 
 .nav-back:hover {
     color: var(--green);
-    min-height: 32px;
 }
 
 /* ─── Separator ──────────────────────────── */
@@ -344,6 +333,7 @@ a:hover {
     border-bottom: 1px solid rgba(0, 122, 31, 0.1);
     cursor: help;
     position: relative;
+    min-height: calc(36px * var(--scale));
 }
 
 .stat-label {
@@ -399,14 +389,14 @@ a:hover {
     font-size: 0.45rem;
     padding: 0.5rem 0.6rem;
     line-height: 1.8;
-    max-width: 220px;
+    max-width: calc(220px * var(--scale));
     z-index: 9999;
     pointer-events: none;
     display: none;
     box-shadow: 0 0 12px rgba(0, 255, 65, 0.2);
 }
 
-/* ─── Monster Banners (team.html) ────────── */
+/* ─── Monster Banners ────────────────────── */
 .monster-banner {
     border: 2px solid var(--dim);
     padding: 0.85rem;
@@ -425,10 +415,16 @@ a:hover {
     background: rgba(0, 122, 31, 0.05);
 }
 
+.monster-banner:active {
+    transform: translate(2px, 2px);
+}
+
 .monster-banner.empty {
     border: 2px dashed rgba(0, 122, 31, 0.35);
     opacity: 0.55;
     align-items: center;
+    justify-content: center;
+    min-height: 4rem;
 }
 
 .monster-banner.empty:hover {
@@ -438,9 +434,10 @@ a:hover {
 }
 
 .monster-img {
-    width: 48px;
-    height: 48px;
+    width: 3.2rem;
+    height: 3.2rem;
     image-rendering: pixelated;
+    object-fit: contain;
     flex-shrink: 0;
     border: 1px solid rgba(0, 122, 31, 0.2);
 }
@@ -466,45 +463,12 @@ a:hover {
     text-transform: uppercase;
 }
 
-.monster-exp {
-    font-size: 0.45rem;
-    color: var(--text);
-    margin-bottom: 0.3rem;
-}
-
-.sp-badge {
-    display: inline-block;
-    font-size: 0.45rem;
-    color: #000;
-    background: var(--green);
-    padding: 0.1rem 0.35rem;
-    margin-bottom: 0.3rem;
-}
-
-.stats-mini {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.1rem 0.5rem;
-    margin-top: 0.3rem;
-}
-
-.stats-mini-item {
-    font-size: 0.4rem;
-    color: var(--dim);
-    display: flex;
-    gap: 0.25rem;
-}
-
-.stats-mini-item b {
-    color: var(--text);
-}
-
 .empty-slot-text {
     font-size: 0.5rem;
     color: var(--dim);
 }
 
-/* ─── Monster Header (viewMonster.html) ───── */
+/* ─── Monster Header (ViewMonster) ─────────── */
 .monster-header {
     display: flex;
     gap: 1rem;
@@ -515,9 +479,10 @@ a:hover {
 }
 
 .monster-header-img {
-    width: 64px;
-    height: 64px;
+    width: 4rem;
+    height: 4rem;
     image-rendering: pixelated;
+    object-fit: contain;
     flex-shrink: 0;
     border: 1px solid var(--dim);
 }
@@ -528,12 +493,10 @@ a:hover {
 }
 
 .monster-header-info .monster-type-lv {
-    font-size: 0.5rem;
-    color: var(--dim);
-    text-transform: uppercase;
+    font-size: 0.45rem;
 }
 
-/* ─── Carousel (createMonster.html) ─────── */
+/* ─── Carousel ───────────────────────────── */
 .carousel-row {
     display: flex;
     align-items: center;
@@ -544,7 +507,7 @@ a:hover {
 .carousel-wrap {
     flex: 1;
     overflow: hidden;
-    min-height: 155px;
+    min-height: 10rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -560,9 +523,10 @@ a:hover {
 }
 
 .carousel-img {
-    width: 72px;
-    height: 72px;
+    width: 4.5rem;
+    height: 4.5rem;
     image-rendering: pixelated;
+    object-fit: contain;
     display: block;
     margin: 0 auto 0.6rem;
     border: 1px solid rgba(0, 122, 31, 0.3);
@@ -576,9 +540,9 @@ a:hover {
 }
 
 .carousel-desc {
-    font-size: 0.4rem;
+    font-size: 0.45rem;
     color: var(--text);
-    line-height: 1.9;
+    line-height: 2;
     opacity: 0.75;
 }
 
@@ -590,8 +554,8 @@ a:hover {
 }
 
 .carousel-dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     background: var(--dim);
     border: none;
     cursor: pointer;
@@ -653,13 +617,6 @@ a:hover {
 
 .lb-rank-row.rank-3 .lb-rank {
     color: #cd7f32;
-}
-
-.lb-medal {
-    font-size: 0.75rem;
-    flex-shrink: 0;
-    width: 1.2rem;
-    text-align: center;
 }
 
 .lb-name {

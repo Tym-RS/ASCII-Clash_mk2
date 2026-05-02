@@ -6,166 +6,54 @@
     <title>ASCII Clash — Team</title>
     <link rel="stylesheet" href="/style.css">
     <style>
-        /* ── Title row ── */
         .title-row {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.75rem;
             padding-bottom: 0.75rem;
             border-bottom: 2px solid var(--dim);
             flex-wrap: wrap;
         }
 
         .title-row h1 {
-            margin: 0;
-            padding: 0;
-            border: none;
+            margin: 0; padding: 0; border: none;
             font-size: 0.85rem;
-            flex: 1;
-            min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .title-row h1::after { content: none; }
 
         .fight-badge {
-            font-size: 0.38rem;
-            color: #000;
+            font-size: 0.38rem; color: #000;
             background: var(--green);
             padding: 0.3rem 0.45rem;
-            letter-spacing: 0.15em;
-            white-space: nowrap;
+            letter-spacing: 0.15em; white-space: nowrap;
             animation: blink 1.2s step-end infinite;
             flex-shrink: 0;
         }
 
-        /* ── Monster cards ── */
-        .monster-banner {
-            border: 2px solid var(--dim);
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-            padding: 0.75rem;
-            margin-bottom: 0.6rem;
-            cursor: pointer;
-            background: rgba(0, 0, 0, 0.4);
-            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-        }
-
-        .monster-banner:hover {
-            border-color: var(--green);
-            box-shadow: 0 0 12px rgba(0, 255, 65, 0.1);
-            background: rgba(0, 122, 31, 0.05);
-        }
-
-        .monster-banner:active { transform: translate(2px, 2px); }
-
-        .monster-banner.empty {
-            border: 2px dashed rgba(0, 122, 31, 0.35);
-            justify-content: center;
-            min-height: 64px;
-            opacity: 0.55;
-        }
-
-        .monster-banner.empty:hover {
-            opacity: 1;
-            border-color: var(--green);
-        }
-
-        .empty-slot-text {
-            font-size: 0.5rem;
-            color: var(--dim);
-        }
-
-        .monster-img {
-            width: 52px;
-            height: 52px;
-            object-fit: contain;
-            image-rendering: pixelated;
-            flex-shrink: 0;
-        }
-
-        .monster-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .monster-name {
-            font-size: 0.6rem;
-            color: var(--green);
-            margin-bottom: 0.25rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .monster-type-lv {
+        .team-level-line {
             font-size: 0.42rem;
             color: var(--dim);
-            margin-bottom: 0.4rem;
+            margin-bottom: 1rem;
+            letter-spacing: 0.1em;
         }
+
+        /* ── Monster cards ── */
+        .monster-banner:active { transform: translate(2px, 2px); }
 
         /* ── HP bar ── */
-        .hp-row {
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-        }
-
-        .hp-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.38rem;
-            color: var(--dim);
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: rgba(0, 122, 31, 0.15);
-            border: 1px solid rgba(0, 122, 31, 0.3);
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--green);
-            transition: width 0.3s ease;
-        }
-
-        .progress-fill.low   { background: var(--yellow, #ffe000); }
-        .progress-fill.crit  { background: var(--red); }
-
-        /* ── Delete ── */
-        .delete-wrap {
-            margin-top: 1.5rem;
-        }
-
-        .btn-danger {
-            width: 100%;
-            background: transparent;
-            color: rgba(0, 122, 31, 0.45);
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.5rem;
-            border: 1px solid rgba(0, 122, 31, 0.25);
-            padding: 0.75rem;
-            cursor: pointer;
-            min-height: 48px;
-            transition: color 0.15s, border-color 0.15s;
-        }
-
-        .btn-danger:hover  { color: var(--red); border-color: var(--red); }
-        .btn-danger.armed  { color: var(--red); border-color: var(--red); animation: blink 0.6s step-end infinite; }
+        .hp-row { display: flex; flex-direction: column; gap: 0.2rem; }
+        .hp-label { display: flex; justify-content: space-between; font-size: 0.38rem; color: var(--dim); }
+        .progress-fill.low  { background: var(--yellow, #ffe000); }
+        .progress-fill.crit { background: var(--red); }
 
         /* ── AutoFight toggle ── */
         .autofight-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid var(--dim);
-            padding: 0.6rem 0.75rem;
-            margin-bottom: 0.75rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid var(--dim); padding: 0.6rem 0.75rem; margin-bottom: 0.75rem;
         }
 
         .autofight-label { font-size: 0.45rem; color: var(--dim); }
@@ -173,29 +61,85 @@
         .autofight-btn {
             background: transparent;
             font-family: 'Press Start 2P', monospace;
-            font-size: 0.42rem;
-            border: 1px solid var(--dim);
-            color: var(--dim);
-            padding: 0.35rem 0.6rem;
-            cursor: pointer;
-            min-height: 36px;
+            font-size: 0.45rem;
+            border: 1px solid var(--dim); color: var(--dim);
+            padding: 0.35rem 0.6rem; cursor: pointer;
+            min-height: calc(36px * var(--scale));
             transition: color 0.15s, border-color 0.15s;
         }
 
         .autofight-btn.on    { color: var(--green); border-color: var(--green); }
         .autofight-btn:hover { color: var(--text);  border-color: var(--text);  }
+
+        /* ── Fight action buttons ── */
+        .fight-actions { margin-bottom: 1rem; }
+
+        .fight-btn-row { display: flex; gap: 0.5rem; }
+        .fight-btn-row .btn-primary { flex: 1; font-size: 0.6rem; }
+
+        .btn-lobby {
+            flex: 1;
+            background: transparent;
+            color: var(--green);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.6rem;
+            border: 2px solid var(--green);
+            padding: 0.9rem 1rem;
+            cursor: pointer;
+            min-height: calc(48px * var(--scale));
+            transition: background 0.15s;
+        }
+
+        .btn-lobby:hover { background: rgba(0, 255, 65, 0.07); }
+        .btn-lobby:active { transform: translate(2px, 2px); }
+
+        .btn-rejoin {
+            width: 100%;
+            background: rgba(255, 224, 0, 0.06);
+            color: #ffe000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.6rem;
+            border: 2px solid rgba(255, 224, 0, 0.5);
+            padding: 0.9rem 1rem;
+            cursor: pointer;
+            min-height: calc(48px * var(--scale));
+            transition: background 0.15s;
+        }
+
+        .btn-rejoin:hover { background: rgba(255, 224, 0, 0.12); }
+
+        /* ── Delete ── */
+        .delete-wrap { margin-top: 1.5rem; }
+
+        .btn-danger {
+            width: 100%; background: transparent;
+            color: rgba(0, 122, 31, 0.45);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            border: 1px solid rgba(0, 122, 31, 0.25);
+            padding: 0.75rem; cursor: pointer;
+            min-height: calc(48px * var(--scale));
+            transition: color 0.15s, border-color 0.15s;
+        }
+
+        .btn-danger:hover  { color: var(--red); border-color: var(--red); }
+        .btn-danger.armed  { color: var(--red); border-color: var(--red); animation: blink 0.6s step-end infinite; }
     </style>
 </head>
 <body>
 <div class="container">
-    <a href="/PlayerTeams.html" class="nav-back">◀ BACK</a>
+    <a id="backLink" href="/PlayerTeams.html" class="nav-back">◀ BACK</a>
 
     <div class="title-row">
         <h1 id="teamTitle">loading...</h1>
         <span class="fight-badge" id="fightBadge" style="display:none">!! IN FIGHT</span>
     </div>
 
+    <div class="team-level-line" id="teamLevel"></div>
+
     <div id="monsterList" class="loading">loading...</div>
+
+    <div class="fight-actions" id="fightActions"></div>
 
     <div class="autofight-row" id="autofightRow">
         <span class="autofight-label">AUTO FIGHT</span>
@@ -212,10 +156,15 @@
 <script>
     const params = new URLSearchParams(location.search);
     const teamID = params.get('id');
+    const from   = params.get('from');   // 'play' or null
     if (!teamID) location.href = '/PlayerTeams.html';
+
+    // Set back link based on entry point
+    document.getElementById('backLink').href = from === 'play' ? '/Play.html' : '/PlayerTeams.html';
 
     let deleteStage = 0;
     let deleteTimer = null;
+    let autoFightState = false;
 
     // ── Load ──────────────────────────────────────────────
     async function load() {
@@ -227,21 +176,30 @@
 
     // ── Render ────────────────────────────────────────────
     function render(team) {
-        document.title       = 'ASCII Clash — ' + team.name;
+        document.title = 'ASCII Clash — ' + team.name;
         document.getElementById('teamTitle').textContent = team.name;
 
         const badge = document.getElementById('fightBadge');
         badge.style.display = team.in_fight ? 'inline-block' : 'none';
 
-        // AutoFight toggle state
+        // Total level
+        const totalLvl = team.monsters.reduce((s, m) => s + (m ? m.stats.Level : 0), 0);
+        document.getElementById('teamLevel').textContent =
+            totalLvl > 0 ? 'TOTAL LV: ' + totalLvl : 'NO MONSTERS';
+
+        // AutoFight
         autoFightState = !!team.auto_fight;
         const afBtn = document.getElementById('btnAutoFight');
         afBtn.textContent = autoFightState ? 'ON' : 'OFF';
         afBtn.classList.toggle('on', autoFightState);
 
+        // Monster list
         const list = document.getElementById('monsterList');
         list.className = '';
         list.innerHTML = '';
+
+        // Append from= param to child page links when applicable
+        const fromSuffix = from === 'play' ? '&from=play' : '';
 
         team.monsters.forEach((mon) => {
             const banner = document.createElement('div');
@@ -250,7 +208,7 @@
                 banner.className = 'monster-banner empty';
                 banner.innerHTML = '<span class="empty-slot-text">[ + new monster ]</span>';
                 banner.addEventListener('click', () => {
-                    location.href = '/CreateMonster.html?teamID=' + teamID;
+                    location.href = '/CreateMonster.html?teamID=' + teamID + fromSuffix;
                 });
             } else {
                 banner.className = 'monster-banner';
@@ -261,34 +219,92 @@
                 const fillCls = hpPct <= 25 ? 'crit' : hpPct <= 50 ? 'low' : '';
 
                 banner.innerHTML = `
-            <img class="monster-img"
-                 src="/images/${encodeURIComponent(mon.type)}.png"
-                 alt="${mon.type}"
-                 onerror="this.src='/images/NA.png'">
-            <div class="monster-info">
-              <div class="monster-name">${mon.name}</div>
-              <div class="monster-type-lv">${mon.type} · LV.${mon.stats.Level}</div>
-              <div class="hp-row">
-                <div class="hp-label">
-                  <span>HP</span>
-                  <span>${curHP} / ${maxHP}</span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill ${fillCls}" style="width:${hpPct}%"></div>
-                </div>
-              </div>
-            </div>
-          `;
+                    <img class="monster-img"
+                         src="/images/${encodeURIComponent(mon.type)}.png"
+                         alt="${mon.type}"
+                         onerror="this.src='/images/NA.png'">
+                    <div class="monster-info">
+                        <div class="monster-name">${mon.name}</div>
+                        <div class="monster-type-lv">${mon.type} · LV.${mon.stats.Level}</div>
+                        <div class="hp-row">
+                            <div class="hp-label"><span>HP</span><span>${curHP} / ${maxHP}</span></div>
+                            <div class="progress-bar">
+                                <div class="progress-fill ${fillCls}" style="width:${hpPct}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 banner.addEventListener('click', () => {
-                    location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + mon.ID;
+                    location.href = '/ViewMonster.html?teamID=' + teamID + '&monsterID=' + mon.ID + fromSuffix;
                 });
             }
 
             list.appendChild(banner);
         });
+
+        // Fight action buttons
+        renderFightActions(team);
     }
 
-    // ── Two-click delete ──────────────────────────────────
+    // ── Fight action area ─────────────────────────────────
+    const fightErr = document.createElement('div');
+    fightErr.className = 'msg-error';
+
+    function renderFightActions(team) {
+        const wrap = document.getElementById('fightActions');
+        wrap.innerHTML = '';
+        wrap.appendChild(fightErr);
+        hideMsg(fightErr);
+
+        if (team.in_fight) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-rejoin';
+            btn.textContent = '[ REJOIN FIGHT ]';
+            btn.addEventListener('click', () => {
+                location.href = '/ViewFight.html?fight_id=' + team.fight_id + '&team_id=' + teamID;
+            });
+            wrap.appendChild(btn);
+            return;
+        }
+
+        const hasMonsters = team.monsters.some(m => m !== null);
+        if (!hasMonsters) return;
+
+        const row = document.createElement('div');
+        row.className = 'fight-btn-row';
+
+        const spBtn = document.createElement('button');
+        spBtn.className = 'btn-primary';
+        spBtn.textContent = '[ VS AI ]';
+        spBtn.addEventListener('click', async () => {
+            hideMsg(fightErr);
+            spBtn.disabled = true;
+            const res = await postJSON('/StartFight', [parseInt(teamID), -1]);
+            if (!res || !res.ok) {
+                const msg = res ? await res.text() : 'Request failed';
+                showError(fightErr, msg);
+                spBtn.disabled = false;
+                return;
+            }
+            const fightID = await res.text();
+            location.href = '/ViewFight.html?fight_id=' + fightID.trim() + '&team_id=' + teamID;
+        });
+
+        const mpBtn = document.createElement('button');
+        mpBtn.className = 'btn-lobby';
+        mpBtn.textContent = '[ LOBBY ]';
+        mpBtn.addEventListener('click', () => {
+            // Pass back param so Lobby can return here correctly
+            const backURL = encodeURIComponent('/ViewTeam.html?id=' + teamID + (from === 'play' ? '&from=play' : ''));
+            location.href = '/Lobby.html?team_id=' + teamID + '&back=' + backURL;
+        });
+
+        row.appendChild(spBtn);
+        row.appendChild(mpBtn);
+        wrap.appendChild(row);
+    }
+
+    // ── Delete ────────────────────────────────────────────
     const btnDelete = document.getElementById('btnDelete');
 
     btnDelete.addEventListener('click', async () => {
@@ -307,20 +323,17 @@
             btnDelete.disabled = true;
             const res = await postForm('/DeleteTeam', { ID: teamID });
             if (!res || !res.ok) {
-                const msg = res ? await res.text() : 'Request failed';
                 btnDelete.disabled = false;
                 deleteStage = 0;
                 btnDelete.textContent = '[ DELETE TEAM ]';
                 btnDelete.classList.remove('armed');
                 return;
             }
-            location.href = '/PlayerTeams.html';
+            location.href = from === 'play' ? '/Play.html' : '/PlayerTeams.html';
         }
     });
 
     // ── AutoFight toggle ──────────────────────────────────
-    let autoFightState = false;
-
     document.getElementById('btnAutoFight').addEventListener('click', async () => {
         const btn = document.getElementById('btnAutoFight');
         const newVal = autoFightState ? 0 : 1;

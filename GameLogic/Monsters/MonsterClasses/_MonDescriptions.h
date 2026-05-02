@@ -1,15 +1,20 @@
-#ifndef ASCII_CLASH_STRINGS_H
-#define ASCII_CLASH_STRINGS_H
+#pragma once
 
-#include "Config.h"
 #include <unordered_map>
 #include <string>
 #include <utility>
 #include <nlohmann/json.hpp>
 
 
+#define MONSTER_TYPES \
+X(Human,  "Average human. Can counter attack.") \
+X(Orc,    "A big GREEN savage. Can headbutt.") \
+X(Methog, "Hedgehog, but with Metal. Touch = Hurt") \
+X(Ratkin, "A stealth-sneak rat. Ugly like you.")
+
+
 enum class MonsterType {
-#define X(type, desc) type,
+#define X(type, desc, ...) type,
     MONSTER_TYPES
 #undef X
     COUNT
@@ -25,12 +30,12 @@ struct MonDescription {
 };
 
 const inline std::unordered_map<MonsterType, MonDescription> MonsterDescriptions = {
-#define X(type, desc) { MonsterType::type, MonDescription(#type, desc) },
+#define X(type, desc, ...) { MonsterType::type, MonDescription(#type, desc) },
     MONSTER_TYPES
 #undef X
 };
 
-const inline std::unordered_map<std::string, MonsterType> StringMonsterTyperMap = {
+const inline std::unordered_map<std::string, MonsterType> StringMonsterTypeMap = {
 #define X(type, ...) { #type, MonsterType::type },
     MONSTER_TYPES
 #undef X
@@ -39,14 +44,15 @@ const inline std::unordered_map<std::string, MonsterType> StringMonsterTyperMap 
 
 inline nlohmann::json GetGameDescriptionsJSON() {
     return nlohmann::json{
-#define X(type, desc) {#type, desc},
+#define X(type, desc, ...) {#type, desc},
         {
             "Monsters", nlohmann::json{
                 MONSTER_TYPES
             }
         },
 #undef X
-#define X(stat, desc, dflt, lvlAmnt) {#stat, {{"Description", desc}, {"Default", dflt}, {"LevelUp", lvlAmnt}}},
+
+#define X(stat, desc, dflt, lvlAmnt, ...) {#stat, {{"Description", desc}, {"Default", dflt}, {"LevelUp", lvlAmnt}}},
         {
             "Stats", nlohmann::json{
                 MONSTER_STATS
@@ -55,6 +61,3 @@ inline nlohmann::json GetGameDescriptionsJSON() {
 #undef X
     };
 }
-
-
-#endif

@@ -1,6 +1,6 @@
 #include "NestedLogger.h"
 
-NestedLogger::LogEntry::LogEntry(std::string header, LType importance)
+NestedLogger::LogEntry::LogEntry(std::string header, const LType importance)
     : header(std::move(header)), importance(importance) {
 }
 
@@ -8,12 +8,12 @@ void NestedLogger::LogEntry::Append(const LogEntry &toAdd) {
     logs.emplace_back(toAdd);
 }
 
-NestedLogger::LogEntry NestedLogger::LogEntry::FromJson(nlohmann::json j) {
-    const std::string header = j.at("header").get<std::string>();
-    const std::string importanceStr = j.at("importance").get<std::string>();
+NestedLogger::LogEntry NestedLogger::LogEntry::FromJson(nlohmann::json data) {
+    const std::string header = data.value("header", "Lost to time... (data corruption)");
+    const std::string importanceStr = data.value("importance", "Lost to time... (data corruption)");
     auto entry = LogEntry(header, LogTypeStringMap.at(importanceStr));
-    if (j.contains("details"))
-        for (const auto &childJson: j["details"])
+    if (data.contains("details"))
+        for (const auto &childJson: data["details"])
             entry.logs.emplace_back(FromJson(childJson));
     return entry;
 }

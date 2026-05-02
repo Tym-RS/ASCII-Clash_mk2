@@ -6,253 +6,338 @@
   <title>ASCII Clash — Lobby</title>
   <link rel="stylesheet" href="/style.css">
   <style>
-    .lobby-status {
-      border: 2px solid var(--dim);
-      background: rgba(0, 0, 0, 0.4);
+    /* ── My team info ── */
+    .my-team-block {
+      border: 1px solid rgba(0, 122, 31, 0.35);
+      background: rgba(0, 0, 0, 0.3);
       padding: 0.85rem 1rem;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-
-    .lobby-status-text {
-      font-size: 0.5rem;
-      color: var(--dim);
-      margin-bottom: 0.75rem;
-      animation: blink 1.2s step-end infinite;
-    }
-
-    .lobby-status-text.active { color: var(--green); }
-
-    .request-card {
-      border: 1px solid var(--dim);
-      background: rgba(0, 0, 0, 0.4);
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      cursor: pointer;
+      margin-bottom: 1.25rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      transition: border-color 0.15s, background 0.15s;
+      flex-wrap: wrap;
     }
 
-    .request-card:hover {
-      border-color: var(--green);
-      background: rgba(0, 122, 31, 0.06);
-    }
-
-    .request-card:active { transform: translate(2px, 2px); }
-
-    .request-info { min-width: 0; }
-
-    .request-name {
-      font-size: 0.55rem;
+    .my-team-name {
+      font-size: 0.65rem;
       color: var(--green);
-      margin-bottom: 0.25rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .request-level {
-      font-size: 0.4rem;
-      color: var(--dim);
-    }
-
-    .request-action {
+    .my-team-lv {
       font-size: 0.42rem;
       color: var(--dim);
-      flex-shrink: 0;
       white-space: nowrap;
     }
 
-    .section-title {
-      font-size: 0.45rem;
-      color: var(--dim);
-      letter-spacing: 0.15em;
-      margin-bottom: 0.6rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 1px solid rgba(0, 122, 31, 0.25);
-    }
-
-    .empty-list {
+    /* ── Status block ── */
+    .status-block {
+      border: 1px solid var(--dim);
+      padding: 1.25rem 1rem;
       text-align: center;
-      font-size: 0.45rem;
-      color: var(--dim);
-      padding: 1rem 0;
+      margin-bottom: 1.25rem;
+      min-height: calc(80px * var(--scale));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
     }
 
-    .btn-cancel {
-      width: 100%;
-      background: transparent;
-      color: rgba(0, 122, 31, 0.45);
+    .status-main {
+      font-size: 0.65rem;
+      color: var(--green);
+      animation: blink 1.2s step-end infinite;
+    }
+
+    .status-sub {
+      font-size: 0.42rem;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Request list ── */
+    .request-section { margin-bottom: 1.25rem; }
+
+    .request-label {
+      font-size: 0.45rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.65rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(0, 122, 31, 0.2);
+    }
+
+    .request-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border: 1px solid rgba(0, 122, 31, 0.2);
+      padding: 0.7rem 0.85rem;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .request-name {
+      font-size: 0.55rem;
+      color: var(--text);
+      flex: 1;
+      min-width: 5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .request-lv {
+      font-size: 0.4rem;
+      color: var(--dim);
+      white-space: nowrap;
+    }
+
+    .btn-accept {
+      background: var(--green);
+      color: #000;
       font-family: 'Press Start 2P', monospace;
-      font-size: 0.5rem;
-      border: 1px solid rgba(0, 122, 31, 0.25);
-      padding: 0.6rem;
+      font-size: 0.45rem;
+      border: none;
+      padding: 0.5rem 0.75rem;
       cursor: pointer;
-      min-height: 44px;
-      margin-top: 0.5rem;
+      min-height: calc(36px * var(--scale));
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+
+    .btn-accept:hover   { opacity: 0.85; }
+    .btn-accept:active  { transform: translate(2px, 2px); }
+    .btn-accept:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-decline {
+      background: transparent;
+      color: var(--dim);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.42rem;
+      border: 1px solid rgba(0, 122, 31, 0.25);
+      padding: 0.5rem 0.6rem;
+      cursor: pointer;
+      min-height: calc(36px * var(--scale));
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: color 0.15s, border-color 0.15s;
     }
 
-    .btn-cancel:hover { color: var(--red); border-color: var(--red); }
+    .btn-decline:hover { color: var(--red); border-color: var(--red); }
+
+    .no-requests {
+      font-size: 0.45rem;
+      color: rgba(0, 122, 31, 0.35);
+      padding: 0.65rem 0;
+      animation: blink 1.5s step-end infinite;
+    }
+
+    /* ── Send request ── */
+    .send-section { margin-bottom: 1.25rem; }
+
+    .send-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .send-row input {
+      flex: 1;
+      min-width: 6rem;
+    }
+
+    .btn-send {
+      background: transparent;
+      color: var(--green);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      border: 2px solid var(--green);
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      min-height: calc(48px * var(--scale));
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .btn-send:hover   { background: rgba(0, 255, 65, 0.07); }
+    .btn-send:active  { transform: translate(2px, 2px); }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body>
 <div class="container">
-  <a href="/Play.html" class="nav-back">◀ BACK</a>
+  <a id="backLink" href="/Play.html" class="nav-back">◀ BACK</a>
   <h1>Lobby</h1>
 
-  <div class="msg-error" id="err"></div>
-
-  <!-- Request status -->
-  <div class="lobby-status">
-    <div class="lobby-status-text" id="statusText">-- NOT IN QUEUE --</div>
-    <button class="btn-primary" id="btnRequest">[ CREATE REQUEST ]</button>
-    <button class="btn-cancel" id="btnCancel" style="display:none">[ CANCEL REQUEST ]</button>
+  <!-- My team summary -->
+  <div class="my-team-block" id="myTeamBlock" style="display:none">
+    <div class="my-team-name" id="myTeamName">—</div>
+    <div class="my-team-lv"   id="myTeamLv">LV —</div>
   </div>
 
-  <!-- Open requests list -->
-  <div class="section-title">-- OPEN CHALLENGES --</div>
-  <div id="requestList" class="loading">loading...</div>
+  <!-- Waiting / status indicator -->
+  <div class="status-block" id="statusBlock">
+    <div class="status-main" id="statusMain">SEARCHING...</div>
+    <div class="status-sub"  id="statusSub">waiting for opponents</div>
+  </div>
+
+  <!-- Incoming requests -->
+  <div class="request-section" id="incomingSection" style="display:none">
+    <div class="request-label">Incoming Challenges</div>
+    <div id="incomingList"></div>
+  </div>
+
+  <!-- Send a challenge -->
+  <div class="send-section">
+    <div class="request-label">Challenge a Team</div>
+    <div class="msg-error" id="sendErr"></div>
+    <div class="send-row">
+      <input type="number" id="targetTeamID" placeholder="Team ID" min="1" autocomplete="off">
+      <button class="btn-send" id="btnSend">[ SEND ]</button>
+    </div>
+  </div>
+
+  <hr class="sep">
+  <div class="hint-text">Keep this tab open. The page polls automatically for challenges.</div>
 </div>
 
 <script src="/utils.js"></script>
 <script>
-  const params = new URLSearchParams(location.search);
-  const teamID = params.get('team_id');
+  const params  = new URLSearchParams(location.search);
+  const teamID  = params.get('team_id');
+  const backParam = params.get('back');
   if (!teamID) location.href = '/Play.html';
 
-  const errBox     = document.getElementById('err');
-  const statusText = document.getElementById('statusText');
-  const btnRequest = document.getElementById('btnRequest');
-  const btnCancel  = document.getElementById('btnCancel');
+  // Restore back link from param (e.g. when arriving from ViewTeam)
+  if (backParam) {
+    document.getElementById('backLink').href = decodeURIComponent(backParam);
+  }
 
-  let hasRequest  = false;
-  let pollCount   = 0;
-  let pollTimer   = null;
+  let pollTimer     = null;
+  let pollCount     = 0;
+  let myTeamShown   = false;
 
-  // ── Polling interval logic ────────────────────────────
   function getInterval() {
-    if (pollCount < 10)  return 1000;
-    if (pollCount < 20)  return 5000;
+    if (pollCount < 10) return 3000;
+    if (pollCount < 30) return 6000;
     return 10000;
   }
 
   function schedulePoll() {
     clearTimeout(pollTimer);
-    pollTimer = setTimeout(async () => {
-      await poll();
-    }, getInterval());
+    pollTimer = setTimeout(poll, getInterval());
   }
 
-  // ── Poll: check ViewMe (for redirect if fight started) + GetFightRequests ──
+  // ── Poll ─────────────────────────────────────────────
   async function poll() {
     pollCount++;
 
-    const [meRes, reqRes] = await Promise.all([
-      post('/ViewMe'),
-      post('/GetFightRequests'),
-    ]);
+    const res = await post('/ViewMe');
+    if (!res || !res.ok) { schedulePoll(); return; }
+    const meData = await res.json();
 
-    // Check if our team was pulled into a fight
-    if (meRes && meRes.ok) {
-      const meData = await meRes.json();
-      const myTeam = meData.Teams.find(t => t && t.ID === parseInt(teamID));
-      if (myTeam && myTeam.in_fight) {
-        clearTimeout(pollTimer);
-        location.href = '/ViewFight.html?fight_id=' + myTeam.fight_id + '&team_id=' + teamID;
-        return;
-      }
+    const myTeam = meData.Teams.find(t => t && t.ID === parseInt(teamID));
+    if (!myTeam) { location.href = '/Play.html'; return; }
+
+    // If we just entered a fight, redirect
+    if (myTeam.in_fight) {
+      location.href = '/ViewFight.html?fight_id=' + myTeam.fight_id + '&team_id=' + teamID;
+      return;
     }
 
-    // Render open requests
-    if (reqRes && reqRes.ok) {
-      const requests = await reqRes.json();
-      renderRequests(requests);
+    // Show team info block once
+    if (!myTeamShown) {
+      const totalLvl = myTeam.monsters.reduce((s, m) => s + (m ? m.Level : 0), 0);
+      document.getElementById('myTeamName').textContent = myTeam.name;
+      document.getElementById('myTeamLv').textContent   = 'TOTAL LV: ' + totalLvl;
+      document.getElementById('myTeamBlock').style.display = 'flex';
+      myTeamShown = true;
     }
 
+    renderRequests(myTeam.incoming_requests || []);
     schedulePoll();
   }
 
+  // ── Render incoming ───────────────────────────────────
   function renderRequests(requests) {
-    const list = document.getElementById('requestList');
-    list.className = '';
+    const section = document.getElementById('incomingSection');
+    const list    = document.getElementById('incomingList');
     list.innerHTML = '';
 
-    // Filter out our own request from the list
-    const others = requests.filter(r => r.ID !== parseInt(teamID));
-
-    if (others.length === 0) {
-      list.innerHTML = '<div class="empty-list">NO OPEN CHALLENGES</div>';
+    if (!requests || requests.length === 0) {
+      section.style.display = 'block';
+      const empty = document.createElement('div');
+      empty.className   = 'no-requests';
+      empty.textContent = '-- none yet --';
+      list.appendChild(empty);
+      schedulePoll();
       return;
     }
 
-    others.forEach(r => {
-      const card = document.createElement('div');
-      card.className = 'request-card';
-      card.innerHTML = `
-          <div class="request-info">
-            <div class="request-name">${r.name}</div>
-            <div class="request-level">LEVEL ${r.Level}</div>
-          </div>
-          <span class="request-action">[ FIGHT ]</span>
-        `;
-      card.addEventListener('click', async () => {
-        clearTimeout(pollTimer);
-        const res = await postJSON('/StartFight', [parseInt(teamID), r.ID]);
-        if (!res || !res.ok) {
-          const msg = res ? await res.text() : 'Request failed';
-          showError(errBox, msg);
-          schedulePoll();
-          return;
-        }
-        const fightID = await res.text();
+    section.style.display = 'block';
+    requests.forEach(req => {
+      const row = document.createElement('div');
+      row.className = 'request-row';
+      row.innerHTML = `
+                <div class="request-name">${req.Name || ('Team #' + req.ID)}</div>
+                <div class="request-lv">LV ${req.Level || '?'}</div>
+            `;
+
+      const accept = document.createElement('button');
+      accept.className   = 'btn-accept';
+      accept.textContent = '[ ACCEPT ]';
+      accept.addEventListener('click', async () => {
+        accept.disabled = true;
+        const r = await postJSON('/StartFight', [parseInt(teamID), req.ID]);
+        if (!r || !r.ok) { accept.disabled = false; return; }
+        const fightID = await r.text();
         location.href = '/ViewFight.html?fight_id=' + fightID.trim() + '&team_id=' + teamID;
       });
-      list.appendChild(card);
+
+      const decline = document.createElement('button');
+      decline.className   = 'btn-decline';
+      decline.textContent = '[ SKIP ]';
+      decline.addEventListener('click', async () => {
+        await postForm('/DeclineChallenge', { team_ID: teamID, challenger_ID: req.ID });
+        await poll();
+      });
+
+      row.appendChild(accept);
+      row.appendChild(decline);
+      list.appendChild(row);
     });
   }
 
-  // ── Create request ────────────────────────────────────
-  btnRequest.addEventListener('click', async () => {
-    hideMsg(errBox);
-    btnRequest.disabled = true;
-    const res = await postForm('/CreateFightRequest', { team_ID: teamID });
-    if (!res || !res.ok) {
-      const msg = res ? await res.text() : 'Request failed';
-      showError(errBox, msg);
-      btnRequest.disabled = false;
-      return;
+  // ── Send challenge ────────────────────────────────────
+  const btnSend = document.getElementById('btnSend');
+  const sendErr = document.getElementById('sendErr');
+
+  btnSend.addEventListener('click', async () => {
+    hideMsg(sendErr);
+    const targetID = document.getElementById('targetTeamID').value.trim();
+    if (!targetID) { showError(sendErr, 'Enter a team ID'); return; }
+
+    btnSend.disabled = true;
+    const r = await postForm('/SendChallenge', { team_ID: teamID, target_ID: targetID });
+    if (!r || !r.ok) {
+      const msg = r ? await r.text() : 'Request failed';
+      showError(sendErr, msg);
     }
-    hasRequest = true;
-    btnRequest.style.display  = 'none';
-    btnCancel.style.display   = 'block';
-    statusText.textContent    = '-- WAITING FOR OPPONENT --';
-    statusText.classList.add('active');
+    btnSend.disabled = false;
   });
 
-  // ── Cancel request ────────────────────────────────────
-  btnCancel.addEventListener('click', async () => {
-    hideMsg(errBox);
-    btnCancel.disabled = true;
-    const res = await postForm('/RetractFightRequest', { team_ID: teamID });
-    if (!res || !res.ok) {
-      const msg = res ? await res.text() : 'Request failed';
-      showError(errBox, msg);
-      btnCancel.disabled = false;
-      return;
-    }
-    hasRequest = false;
-    btnCancel.style.display   = 'none';
-    btnRequest.style.display  = 'block';
-    btnRequest.disabled       = false;
-    statusText.textContent    = '-- NOT IN QUEUE --';
-    statusText.classList.remove('active');
+  document.getElementById('targetTeamID').addEventListener('keydown', e => {
+    if (e.key === 'Enter') btnSend.click();
   });
 
-  // ── Start ─────────────────────────────────────────────
   poll();
 </script>
 </body>

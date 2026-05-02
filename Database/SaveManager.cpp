@@ -2,6 +2,9 @@
 #include <string>
 
 #include "SaveManager.h"
+
+#include <set>
+
 #include "TableDefs.h"
 
 namespace Database {
@@ -77,6 +80,7 @@ namespace Database {
     }
 
     bool SaveManager::TrySaveTo(const std::string &table, nlohmann::json j, std::string *err) const {
+        EnsureColumns(table, j);
         std::vector<std::string> keys;
         for (auto &[key, _]: j.items()) keys.push_back(key);
 
@@ -92,7 +96,10 @@ namespace Database {
 
         const std::string cmd = "INSERT OR REPLACE INTO " + table + " (" + colList + ") VALUES (" + placeholders + ");";
         sqlite3_stmt *stmt;
-        sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr);
+        if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+            SET_ERR(sqlite3_errmsg(db));
+            return false;
+        }
 
         for (int i = 0; i < static_cast<int>(keys.size()); i++) {
             auto &v = j[keys[i]];
@@ -129,6 +136,21 @@ namespace Database {
         sqlite3_close(db);
     }
 
+    void SaveManager::EnsureColumns(const std::string &table, const nlohmann::json &j) const {
+        std::set<std::string> existingCols;
+        sqlite3_stmt *stmt;
+        sqlite3_prepare_v2(db, ("PRAGMA table_info(" + table + ");").c_str(), -1, &stmt, nullptr);
+        while (sqlite3_step(stmt) == SQLITE_ROW)
+            existingCols.insert(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
+        sqlite3_finalize(stmt);
+
+        for (auto &[key, val]: j.items()) {
+            if (existingCols.contains(key)) continue;
+            std::string type = val.is_number_integer() ? "INTEGER" : val.is_number_float() ? "REAL" : "TEXT";
+            sqlite3_exec(db, ("ALTER TABLE " + table + " ADD COLUMN " + key + " " + type + ";").c_str(), nullptr,
+                         nullptr, nullptr);
+        }
+    }
 
 #ifndef NDEBUG
 

@@ -144,7 +144,7 @@
       <h1>TOP SCORES</h1>
       <span class="arcade-tagline">-- TOP PLAYERS --</span>
     </div>
-    <div class="arcade-foot">▶ SOMEONE ELSE MIGHT BE BETTER... ◀</div>
+    <div class="arcade-foot" id="splashText">▶ LOADING... ◀</div>
   </div>
 
   <div class="you-status" id="youStatus"></div>
@@ -170,11 +170,17 @@
   let me          = null;
 
   async function init() {
-    // Fetch leaderboard + current user in parallel
-    const [lbRes, meRes] = await Promise.all([
+    // Fetch leaderboard + current user + splash text in parallel
+    const [lbRes, meRes, splashRes] = await Promise.all([
       postForm('/Leaderboard', { limit: LIMITS[0] }),
       post('/ViewMe'),
+      post('/SplashText'),
     ]);
+
+    if (splashRes && splashRes.ok) {
+      const t = await splashRes.text();
+      document.getElementById('splashText').textContent = '▶ ' + t + ' ◀';
+    }
 
     if (meRes && meRes.ok) {
       const meData = await meRes.json();
